@@ -14,6 +14,13 @@ export const Product = () => {
   const [showSidebar, setShowSidebar] = useState(isLargeScreen);
   const [selectedImage, setSelectedImage] = useState(0);
   const [activeTab, setActiveTab] = useState("description");
+  const [selectedDimension, setSelectedDimension] = useState<string | null>(
+    null
+  );
+  const [selectedCondition, setSelectedCondition] = useState<string | null>(
+    null
+  );
+  const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
   const contactRef = useRef<HTMLDivElement>(null);
 
   const toggleSidebar = () => {
@@ -25,8 +32,10 @@ export const Product = () => {
   };
 
   const product = {
+    id: "cont-001", // Added product ID
     name: "Shipping Container",
     sku: "BSGH-JSGJ",
+    price: 2650, // Base price when no dimensions are specified
     images: [
       sampleImage,
       sampleImage2,
@@ -48,7 +57,111 @@ export const Product = () => {
       "Wind/Water Tight: Yes",
       "CSC Plate: Certified",
     ],
-    price: 2650,
+    // dimensions: [] as {
+    //   dimension: string;
+    //   conditions: { condition: string; price: number }[];
+    // }[], // Empty array will make it use the base price
+    dimensions: [
+      // Uncomment this to test with dimensions
+      {
+        dimension: "20ft",
+        conditions: [
+          { condition: "New", price: 3000 },
+          { condition: "Used - Like New", price: 2650 },
+          { condition: "Used - Good", price: 2200 },
+        ],
+      },
+      {
+        dimension: "40ft",
+        conditions: [
+          { condition: "New", price: 4500 },
+          { condition: "Used - Like New", price: 3850 },
+          { condition: "Used - Good", price: 3200 },
+        ],
+      },
+      {
+        dimension: "10ft",
+        conditions: [
+          { condition: "New", price: 2200 },
+          { condition: "Used - Like New", price: 1950 },
+          { condition: "Used - Good", price: 1700 },
+        ],
+      },
+    ],
+    delivery: [
+      { method: "Pickup", price: 0 },
+      { method: "Local Delivery", price: 250 },
+      { method: "Nationwide Shipping", price: 850 },
+    ],
+  };
+
+  const handleDimensionClick = (dimension: string) => {
+    setSelectedDimension(dimension);
+    setSelectedCondition(null);
+  };
+
+  const handleConditionClick = (condition: string) => {
+    setSelectedCondition(condition);
+  };
+
+  const handleDeliveryClick = (method: string) => {
+    setSelectedDelivery(method);
+  };
+
+  const getBasePrice = () => {
+    // If no dimensions, use the base price
+    if (product.dimensions.length === 0) return product.price;
+
+    // If dimensions exist but none selected, return null
+    if (!selectedDimension) return null;
+
+    const dimensionObj = product.dimensions.find(
+      (d) => d.dimension === selectedDimension
+    );
+    if (!dimensionObj) return null;
+
+    // If no condition selected, return null
+    if (!selectedCondition) return null;
+
+    const conditionObj = dimensionObj.conditions.find(
+      (c) => c.condition === selectedCondition
+    );
+    return conditionObj?.price || null;
+  };
+
+  const getDeliveryPrice = () => {
+    if (!selectedDelivery) return 0;
+    const deliveryObj = product.delivery.find(
+      (d) => d.method === selectedDelivery
+    );
+    return deliveryObj?.price || 0;
+  };
+
+  const basePrice = getBasePrice();
+  const deliveryPrice = getDeliveryPrice();
+  const totalPrice = basePrice !== null ? basePrice + deliveryPrice : null;
+
+  const handleAddToCart = () => {
+    const cartItem = {
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      price: product.dimensions.length === 0 ? product.price : basePrice,
+      dimension: selectedDimension,
+      condition: selectedCondition,
+      deliveryMethod: selectedDelivery,
+      deliveryPrice: deliveryPrice,
+      totalPrice: totalPrice,
+      image: product.images[0],
+    };
+
+    console.log("Added to cart:", cartItem);
+    alert(
+      `Added to cart: ${product.name}\nPrice: $${cartItem.price}\nDelivery: ${cartItem.deliveryMethod} ($${cartItem.deliveryPrice})`
+    );
+
+    // Here you would typically dispatch to your cart state or API
+    // dispatch(addToCart(cartItem));
   };
 
   return (
@@ -129,16 +242,123 @@ export const Product = () => {
                   {product.sku && (
                     <p className="text-gray-600 mb-4">SKU: {product.sku}</p>
                   )}
-                  <p className="text-3xl font-bold text-dark mb-6">
-                    ${product.price.toLocaleString()}
-                  </p>
+
+                  {/* Dimensions - Only show if dimensions exist */}
+                  {product.dimensions.length > 0 && (
+                    <div className="mb-4">
+                      <p className="font-medium mb-2">Dimensions</p>
+                      <div className="flex flex-wrap gap-2">
+                        {product.dimensions.map((item) => (
+                          <motion.button
+                            key={item.dimension}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`px-4 py-2 border rounded-lg ${
+                              selectedDimension === item.dimension
+                                ? "bg-dark text-light border-dark"
+                                : "border-gray-300 hover:bg-gray-100"
+                            }`}
+                            onClick={() => handleDimensionClick(item.dimension)}
+                          >
+                            {item.dimension}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Conditions - Only show if dimension is selected */}
+                  {selectedDimension &&
+                    product.dimensions[0]?.conditions?.length > 0 && (
+                      <div className="mb-4">
+                        <p className="font-medium mb-2">Conditions</p>
+                        <div className="flex flex-wrap gap-2">
+                          {product.dimensions
+                            .find((d) => d.dimension === selectedDimension)
+                            ?.conditions.map((item) => (
+                              <motion.button
+                                key={item.condition}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`px-4 py-2 border rounded-lg ${
+                                  selectedCondition === item.condition
+                                    ? "bg-dark text-light border-dark"
+                                    : "border-gray-300 hover:bg-gray-100"
+                                }`}
+                                onClick={() =>
+                                  handleConditionClick(item.condition)
+                                }
+                              >
+                                {item.condition}
+                              </motion.button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Price Display */}
+                  <div className="mb-6">
+                    {totalPrice !== null ? (
+                      <div>
+                        <p className="text-3xl font-bold text-dark">
+                          ${totalPrice.toLocaleString()}
+                        </p>
+                        {deliveryPrice > 0 && (
+                          <p className="text-sm text-gray-600">
+                            Includes ${deliveryPrice} for {selectedDelivery}
+                          </p>
+                        )}
+                      </div>
+                    ) : product.dimensions.length === 0 ? (
+                      <p className="text-3xl font-bold text-dark">
+                        ${product.price.toLocaleString()}
+                      </p>
+                    ) : (
+                      <p className="text-gray-600">
+                        Select options to see price
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Delivery */}
+                  {product.delivery.length > 0 && (
+                    <div className="mb-6">
+                      <p className="font-medium mb-2">Delivery Options</p>
+                      <div className="flex flex-wrap gap-2">
+                        {product.delivery.map((item) => (
+                          <motion.button
+                            key={item.method}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`px-4 py-2 border rounded-lg ${
+                              selectedDelivery === item.method
+                                ? "bg-dark text-light border-dark"
+                                : "border-gray-300 hover:bg-gray-100"
+                            }`}
+                            onClick={() => handleDeliveryClick(item.method)}
+                          >
+                            {item.method}{" "}
+                            {item.price > 0 ? `(+$${item.price})` : ""}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full bg-light text-white py-3 px-6 rounded-lg font-bold hover:bg-light transition-colors"
+                    className={`w-full bg-light text-white py-3 mb-4 px-6 rounded-lg font-bold hover:bg-light transition-colors ${
+                      product.dimensions.length > 0 && !totalPrice
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
+                    disabled={product.dimensions.length > 0 && !totalPrice}
+                    onClick={handleAddToCart}
                   >
-                    Add to Cart
+                    {product.dimensions.length > 0 && !totalPrice
+                      ? "Select Options"
+                      : "Add to Cart"}
                   </motion.button>
 
                   <div className="flex justify-between items-center bg-light rounded py-4 px-8 mt-8 md:mt-auto">
