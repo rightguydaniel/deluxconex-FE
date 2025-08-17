@@ -10,17 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
-      # - name: Install Node.js
-      #   uses: actions/setup-node@v3
-      #   with:
-      #     node-version: '18'
-      
-      # - name: Install dependencies
-      #   run: npm install
-      
-      # - name: Build project
-      #   run: npm run build
-      
       - name: Deploy dist folder via FTP
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
@@ -28,16 +17,5 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: /deluxconex-FE/
-      
-      - name: SSH and move files to final destination
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd /home/elitfigj/deluxconex.com/deluxconex-FE
-            git pull origin master
-            rm -rf ../!(.htaccess|cgi-bin|.well-known)
-            cp -a dist/. ..
+          server-dir: /deluxconex.com/  # Directly to root
+          protocol: ftps  # Try with FTPS instead of FTP
