@@ -1,6 +1,0 @@
----
-deployment:
-  tasks:
-    - export DEPLOYPATH=/home/elitfigj/deluxconex.com/dist
-    - /bin/cd $DEPLOYPATH
-    - /bin/cp -R * /home/elitfigj/deluxconex.com
