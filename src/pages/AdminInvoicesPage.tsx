@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiEdit2, FiTrash2, FiChevronLeft, FiChevronRight, FiSave, FiX, FiFileText, FiPrinter, FiMail, FiDownload } from 'react-icons/fi';
+import { FiSearch, FiEdit2, FiChevronLeft, FiChevronRight, FiSave, FiX, FiMail, FiDownload } from 'react-icons/fi';
 import AdminLayout from './AdminLayout';
 
 enum InvoiceStatus {

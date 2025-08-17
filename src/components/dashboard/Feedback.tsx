@@ -18,11 +18,26 @@ export const Textarea = ({ title }: InputProps) => {
 };
 
 export const Feedback = () => {
+  const handleChange = async () => {
+    console.log("change");
+  };
   return (
     <div className="flex justify-center">
       <form action="" className="w-3/5">
-        <Input title={"First name"} type={"text"} />
-        <Input title="Last name" type="text" />
+        <Input
+          title={"First name"}
+          type={"text"}
+          name={""}
+          value={""}
+          onChange={handleChange}
+        />
+        <Input
+          title="Last name"
+          type="text"
+          name={""}
+          value={""}
+          onChange={handleChange}
+        />
         <Textarea title={"Your feedback"} />
         <button
           type="submit"

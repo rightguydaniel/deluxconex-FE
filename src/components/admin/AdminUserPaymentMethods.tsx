@@ -35,6 +35,8 @@ interface PaymentMethod {
 }
 
 const AdminUserPaymentMethods = ({ userId }: { userId: string }) => {
+  console.log(userId)
+
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
     {
       id: "pm-001",

@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   FiCreditCard,
   FiPlus,
-  FiEdit2,
   FiTrash2,
   FiCheck,
   FiEye,

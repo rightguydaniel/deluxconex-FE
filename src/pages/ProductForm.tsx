@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiX, FiUpload, FiTrash2, FiPlus, FiMinus } from 'react-icons/fi';
+import { FiX, FiUpload, FiTrash2, } from 'react-icons/fi';
 
 type ProductSpec = string | { title: string; value: string };
 

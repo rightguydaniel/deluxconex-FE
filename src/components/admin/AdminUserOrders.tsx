@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiPackage, FiChevronRight, FiClock, FiCheckCircle, FiTruck, FiXCircle } from 'react-icons/fi';
+import { FiPackage, FiClock, FiCheckCircle, FiTruck, FiXCircle } from 'react-icons/fi';
 
 interface Order {
   id: string;
@@ -22,6 +22,8 @@ interface Order {
 }
 
 const AdminUserOrders = ({ userId }: { userId: string }) => {
+  console.log(userId)
+
   const [orders, setOrders] = useState<Order[]>([
     {
       id: 'ord-001',

@@ -5,7 +5,6 @@ import {
   FiClock,
   FiCheckCircle,
   FiTruck,
-  FiHome,
   FiXCircle,
 } from "react-icons/fi";
 
@@ -74,6 +73,7 @@ const Orders = () => {
       createdAt: "2023-04-20T14:15:00Z",
     },
   ]);
+  setOrders(orders)
 
   const getStatusIcon = (status: string) => {
     switch (status) {

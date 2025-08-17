@@ -20,6 +20,7 @@ interface Address {
 }
 
 const AdminUserAddresses = ({ userId }: { userId: string }) => {
+  console.log(userId)
   const [addresses, setAddresses] = useState<Address[]>([
     {
       id: 'addr-001',

@@ -25,6 +25,8 @@ interface Invoice {
 }
 
 const AdminUserInvoices = ({ userId }: { userId: string }) => {
+  console.log(userId)
+
   const [invoices, setInvoices] = useState<Invoice[]>([
     {
       id: 'inv-001',

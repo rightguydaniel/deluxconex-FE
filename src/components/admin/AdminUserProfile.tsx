@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiUser, FiMail, FiPhone, FiLock, FiSave, FiX, FiShield, FiTrash2 } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiLock, FiSave, FiX } from 'react-icons/fi';
 
 interface AdminUserProfileProps {
   user: {
@@ -21,6 +21,7 @@ const AdminUserProfile = ({ user, onBlockUser, onDeleteUser, onRoleChange }: Adm
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState(user);
   const [tempPassword, setTempPassword] = useState('');
+  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
