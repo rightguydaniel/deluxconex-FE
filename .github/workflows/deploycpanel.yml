@@ -1,20 +1,42 @@
-# name: Deploy to cPanel
+name: Deploy to cPanel via SSH
 
-# on:
-#   push:
-#     branches: [ master ]
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v2
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
       
-#       - name: Deploy dist folder via FTP
-#         uses: SamKirkland/FTP-Deploy-Action@4.3.0
-#         with:
-#           server: ${{ secrets.FTP_SERVER }}
-#           username: ${{ secrets.FTP_USERNAME }}
-#           password: ${{ secrets.FTP_PASSWORD }}
-#           local-dir: ./dist/
-#           server-dir: /deluxconex.com/  # Directly to root
-#           protocol: ftps  # Try with FTPS instead of FTP
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          port: ${{ secrets.SSH_PORT || 21098 }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            echo "Changing to project directory..."
+            cd /home/elitfigj/deluxconex.com/deluxconex-FE || exit 1
+            
+            echo "Pulling latest changes..."
+            git pull origin master
+            
+            echo "Copying dist folder..."
+            cp -a dist/. /home/elitfigj/deluxconex.com/
+            
+            echo "Setting permissions..."
+            chown -R elitfigj:elitfigj /home/elitfigj/deluxconex.com/*
+            find /home/elitfigj/deluxconex.com -type d -exec chmod 755 {} \;
+            find /home/elitfigj/deluxconex.com -type f -exec chmod 644 {} \;
+            
+            echo "Deployment complete!"
