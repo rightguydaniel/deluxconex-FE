@@ -117,7 +117,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.1)" }}
           whileTap={{ scale: 0.9 }}
           className="border border-white rounded p-1 cursor-pointer"
-          onClick={() => navigate("/cart")}
+          onClick={() => navigate("/dashboard/cart")}
         >
           <MdOutlineShoppingCart size={18} />
         </motion.div>

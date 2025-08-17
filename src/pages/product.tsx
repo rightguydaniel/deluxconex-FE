@@ -1,45 +1,12 @@
 import { useMediaQuery } from "react-responsive";
 import { Contact } from "../components/Homepage/Contact";
 import { Footer } from "../components/Homepage/Footer";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
-import sampleImage from "../assets/images/container.webp";
-import sampleImage2 from "../assets/images/container_chassis.webp";
-import newConditionImage from "../assets/images/container.webp";
-import likeNewImage from "../assets/images/warehousads.webp";
-import usedGoodImage from "../assets/images/office_gray.svg";
 import { motion } from "framer-motion";
 import { RiCustomerService2Line } from "react-icons/ri";
-
-// Type definitions
-interface Condition {
-  condition: string;
-  price: number;
-  images: string[];
-}
-
-interface Dimension {
-  dimension: string;
-  conditions: Condition[];
-}
-
-interface DeliveryOption {
-  method: string;
-  price: number;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  sku: string;
-  price: number;
-  images: string[];
-  description: string;
-  specifications: string[];
-  dimensions: Dimension[];
-  delivery: DeliveryOption[];
-}
+import { product, type ProductSpec } from "./productData";
 
 interface CartItem {
   id: string;
@@ -72,6 +39,13 @@ export const Product = () => {
   const [quantity, setQuantity] = useState<number>(1);
   const contactRef = useRef<HTMLDivElement>(null);
 
+  // Auto-select the first dimension if there's only one
+  useEffect(() => {
+    if (product.dimensions.length === 1) {
+      setSelectedDimension(product.dimensions[0].dimension);
+    }
+  }, []);
+
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
@@ -80,92 +54,74 @@ export const Product = () => {
     contactRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const product: Product = {
-    id: "cont-001",
-    name: "Shipping Container",
-    sku: "BSGH-JSGJ",
-    price: 2650,
-    images: [sampleImage, sampleImage2], // Default images when dimensions array is empty
-    description:
-      "Our premium shipping containers are built to withstand harsh conditions while protecting your cargo. Made from high-quality corten steel with reinforced corners, these containers feature hardwood flooring and secure locking mechanisms. Ideal for international shipping, on-site storage, or conversion projects.",
-    specifications: [
-      "Material: Corten Steel",
-      "Dimensions: 20'L x 8'W x 8.5'H",
-      "Tare Weight: 2,300 kg",
-      "Max Payload: 28,200 kg",
-      "Flooring: 28mm Marine Plywood",
-      "Doors: Double door with lock rods",
-      "Wind/Water Tight: Yes",
-      "CSC Plate: Certified",
-    ],
-    // dimensions: [], // Empty array to test default behavior
-    dimensions: [
-      // Uncomment to test with dimensions
-      {
-        dimension: "20ft",
-        conditions: [
-          {
-            condition: "New",
-            price: 3000,
-            images: [newConditionImage, sampleImage, sampleImage2],
-          },
-          {
-            condition: "Used - Like New",
-            price: 2650,
-            images: [likeNewImage, sampleImage, sampleImage],
-          },
-          {
-            condition: "Used - Good",
-            price: 2200,
-            images: [usedGoodImage, sampleImage, sampleImage],
-          },
-        ],
-      },
-      {
-        dimension: "40ft",
-        conditions: [
-          {
-            condition: "New",
-            price: 4500,
-            images: [newConditionImage, sampleImage, sampleImage2],
-          },
-          {
-            condition: "Used - Like New",
-            price: 3850,
-            images: [likeNewImage, sampleImage, sampleImage],
-          },
-          {
-            condition: "Used - Good",
-            price: 3200,
-            images: [usedGoodImage, sampleImage, sampleImage],
-          },
-        ],
-      },
-    ],
-    delivery: [
-      { method: "Pickup", price: 0 },
-      { method: "Local Delivery", price: 250 },
-      { method: "Nationwide Shipping", price: 850 },
-    ],
-  };
+  // Get current display content based on selections
+  const getDisplayContent = () => {
+    // If no dimensions or nothing selected, use product defaults
+    if (
+      product.dimensions.length === 0 ||
+      (!selectedDimension && !selectedCondition)
+    ) {
+      return {
+        description: product.description,
+        specifications: product.specifications,
+        images: product.images,
+      };
+    }
 
-  // Get current images based on selected condition or use default images
-  const getCurrentImages = (): string[] => {
-    if (product.dimensions.length === 0) return product.images;
-    if (!selectedDimension || !selectedCondition) return product.images;
-
+    // Find selected dimension
     const dimensionObj = product.dimensions.find(
       (d) => d.dimension === selectedDimension
     );
-    if (!dimensionObj) return product.images;
+    if (!dimensionObj) {
+      return {
+        description: product.description,
+        specifications: product.specifications,
+        images: product.images,
+      };
+    }
 
-    const conditionObj = dimensionObj.conditions.find(
-      (c) => c.condition === selectedCondition
-    );
-    return conditionObj?.images || product.images;
+    // Handle dimension without conditions
+    if (!dimensionObj.conditions || dimensionObj.conditions.length === 0) {
+      return {
+        description: dimensionObj.description || product.description,
+        specifications: dimensionObj.specifications || product.specifications,
+        images: dimensionObj.images || product.images,
+      };
+    }
+
+    // Handle dimension with conditions
+    if (selectedCondition) {
+      const conditionObj = dimensionObj.conditions.find(
+        (c) => c.condition === selectedCondition
+      );
+      if (conditionObj) {
+        return {
+          description:
+            conditionObj.description ||
+            dimensionObj.description ||
+            product.description,
+          specifications:
+            conditionObj.specifications ||
+            dimensionObj.specifications ||
+            product.specifications,
+          images: conditionObj.images,
+        };
+      }
+    }
+
+    // Default to dimension info if condition not selected
+    return {
+      description: dimensionObj.description || product.description,
+      specifications: dimensionObj.specifications || product.specifications,
+      images: dimensionObj.images || product.images,
+    };
   };
 
-  const currentImages = getCurrentImages();
+  const {
+    description,
+    specifications,
+    images: currentImages,
+  } = getDisplayContent();
 
   const handleDimensionClick = (dimension: string) => {
     setSelectedDimension(dimension);
@@ -188,18 +144,29 @@ export const Product = () => {
   };
 
   const getCurrentPrice = (): number => {
+    // If no dimensions, use product price
     if (product.dimensions.length === 0) return product.price;
-    if (!selectedDimension || !selectedCondition) return product.price;
 
+    // Find selected dimension
     const dimensionObj = product.dimensions.find(
       (d) => d.dimension === selectedDimension
     );
     if (!dimensionObj) return product.price;
 
-    const conditionObj = dimensionObj.conditions.find(
-      (c) => c.condition === selectedCondition
-    );
-    return conditionObj?.price || product.price;
+    // Dimension without conditions
+    if (!dimensionObj.conditions || dimensionObj.conditions.length === 0) {
+      return dimensionObj.price || product.price;
+    }
+
+    // Dimension with conditions
+    if (selectedCondition) {
+      const conditionObj = dimensionObj.conditions.find(
+        (c) => c.condition === selectedCondition
+      );
+      return conditionObj?.price || dimensionObj.price || product.price;
+    }
+
+    return dimensionObj.price || product.price;
   };
 
   const getDeliveryPrice = (): number => {
@@ -238,6 +205,46 @@ export const Product = () => {
     );
   };
 
+  // Check if dimension has conditions
+  const dimensionHasConditions = (dimension: string): boolean => {
+    const dimensionObj = product.dimensions.find(
+      (d) => d.dimension === dimension
+    );
+    return !!dimensionObj?.conditions && dimensionObj.conditions.length > 0;
+  };
+
+  // Render specifications either as list or table
+  const renderSpecifications = (specs: ProductSpec[]) => {
+    return (
+      <div className="space-y-4">
+        {specs.map((spec, index) => {
+          if (typeof spec === "string") {
+            return (
+              <div
+                key={index}
+                className="flex py-2 border-b border-gray-100 last:border-0"
+              >
+                <span className="text-gray-700">{spec}</span>
+              </div>
+            );
+          } else {
+            return (
+              <div
+                key={index}
+                className="flex py-2 border-b border-gray-100 last:border-0"
+              >
+                <span className="font-medium text-dark min-w-[120px]">
+                  {spec.title}:
+                </span>
+                <span className="text-gray-700">{spec.value}</span>
+              </div>
+            );
+          }
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-100 relative">
       {/* Sidebar */}
@@ -273,7 +280,9 @@ export const Product = () => {
                 <div className="bg-white rounded-lg shadow-md p-4 mb-4 flex-1 flex items-center">
                   <img
                     src={currentImages[selectedImage]}
-                    alt={`${product.name} ${selectedCondition || ""}`}
+                    alt={`${product.name} ${selectedDimension || ""} ${
+                      selectedCondition || ""
+                    }`}
                     className="w-full h-auto max-h-80 object-contain"
                   />
                 </div>
@@ -314,8 +323,8 @@ export const Product = () => {
                     <p className="text-gray-600 mb-4">SKU: {product.sku}</p>
                   )}
 
-                  {/* Dimensions - Only show if dimensions exist */}
-                  {product.dimensions.length > 0 && (
+                  {/* Dimensions - Only show if dimensions exist and more than one */}
+                  {product.dimensions.length > 1 && (
                     <div className="mb-4">
                       <p className="font-medium mb-2">Dimensions</p>
                       <div className="flex flex-wrap gap-2">
@@ -338,15 +347,15 @@ export const Product = () => {
                     </div>
                   )}
 
-                  {/* Conditions - Only show if dimension is selected */}
+                  {/* Conditions - Only show if dimension has conditions */}
                   {selectedDimension &&
-                    product.dimensions[0]?.conditions?.length > 0 && (
+                    dimensionHasConditions(selectedDimension) && (
                       <div className="mb-4">
                         <p className="font-medium mb-2">Conditions</p>
                         <div className="flex flex-wrap gap-2">
                           {product.dimensions
                             .find((d) => d.dimension === selectedDimension)
-                            ?.conditions.map((item) => (
+                            ?.conditions?.map((item) => (
                               <motion.button
                                 key={item.condition}
                                 whileHover={{ scale: 1.05 }}
@@ -442,7 +451,7 @@ export const Product = () => {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full bg-light text-white mb-4 py-3 px-6 rounded-lg font-bold hover:bg-light transition-colors"
+                    className="w-full mb-4 bg-light text-dark py-3 px-6 rounded-lg font-bold hover:bg-light transition-colors"
                     onClick={handleAddToCart}
                   >
                     Add to Cart
@@ -491,20 +500,13 @@ export const Product = () => {
 
               <div className="p-6">
                 {activeTab === "description" ? (
-                  <p className="text-gray-700 leading-relaxed">
-                    {product.description}
-                  </p>
+                  <div>
+                    <p className="text-gray-700 leading-relaxed">
+                      {description}
+                    </p>
+                  </div>
                 ) : (
-                  <ul className="space-y-2">
-                    {product.specifications.map((spec, index) => (
-                      <li
-                        key={index}
-                        className="flex py-2 border-b border-gray-100 last:border-0 list-disc"
-                      >
-                        {spec}
-                      </li>
-                    ))}
-                  </ul>
+                  renderSpecifications(specifications)
                 )}
               </div>
             </div>

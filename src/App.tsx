@@ -7,6 +7,11 @@ import { Gallery } from "./pages/Gallery";
 import { Inventory } from "./pages/Inventory";
 import { Delivery } from "./pages/Delivery";
 import { Product } from "./pages/product";
+import AdminProductsPage from "./pages/AdminProductPage";
+import AdminOrdersPage from "./pages/AdminOrderPage";
+import AdminInvoicesPage from "./pages/AdminInvoicesPage";
+import AdminUserManagement from "./pages/AdminUserManagement";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -14,12 +19,18 @@ function App() {
       <Routes>
         <Route path="/" index element={<Homepage />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard/:tab?" element={<Dashboard />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/delivery" element={<Delivery />} />
         <Route path="/product" element={<Product />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/products" element={<AdminProductsPage />} />
+        <Route path="/admin/orders" element={<AdminOrdersPage />} />
+        <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
+        <Route path="/admin/users" element={<AdminUserManagement />} />
+
       </Routes>
     </BrowserRouter>
   );

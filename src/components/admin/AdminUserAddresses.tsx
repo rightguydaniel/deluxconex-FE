@@ -1,11 +1,29 @@
 import { useState } from 'react';
-import { FiHome, FiPlus, FiEdit2, FiTrash2, FiCheck } from 'react-icons/fi';
+import { FiHome, FiPlus, FiEdit2, FiTrash2, FiCheck, } from 'react-icons/fi';
 
-const AddresseBook = () => {
-  const [addresses, setAddresses] = useState([
+enum AddressType {
+  BILLING = "billing",
+  SHIPPING = "shipping"
+}
+
+interface Address {
+  id: string;
+  type: AddressType;
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+  phone?: string;
+  additionalInfo?: string;
+}
+
+const AdminUserAddresses = ({ userId }: { userId: string }) => {
+  const [addresses, setAddresses] = useState<Address[]>([
     {
       id: 'addr-001',
-      type: 'shipping',
+      type: AddressType.SHIPPING,
       street: '123 Main St',
       city: 'New York',
       state: 'NY',
@@ -17,7 +35,7 @@ const AddresseBook = () => {
     },
     {
       id: 'addr-002',
-      type: 'billing',
+      type: AddressType.BILLING,
       street: '456 Business Ave',
       city: 'New York',
       state: 'NY',
@@ -31,8 +49,8 @@ const AddresseBook = () => {
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [newAddress, setNewAddress] = useState({
-    type: 'shipping',
+  const [newAddress, setNewAddress] = useState<Omit<Address, 'id'>>({
+    type: AddressType.SHIPPING,
     street: '',
     city: '',
     state: '',
@@ -53,7 +71,6 @@ const AddresseBook = () => {
 
   const handleAddAddress = () => {
     if (newAddress.isDefault) {
-      // Set all other addresses to non-default
       setAddresses(addresses.map(addr => ({ ...addr, isDefault: false })));
     }
     
@@ -66,7 +83,7 @@ const AddresseBook = () => {
     ]);
     setIsAdding(false);
     setNewAddress({
-      type: 'shipping',
+      type: AddressType.SHIPPING,
       street: '',
       city: '',
       state: '',
@@ -90,7 +107,6 @@ const AddresseBook = () => {
     if (!editingId) return;
     
     if (newAddress.isDefault) {
-      // Set all other addresses to non-default
       setAddresses(addresses.map(addr => 
         addr.id !== editingId ? { ...addr, isDefault: false } : addr
       ));
@@ -101,7 +117,7 @@ const AddresseBook = () => {
     ));
     setEditingId(null);
     setNewAddress({
-      type: 'shipping',
+      type: AddressType.SHIPPING,
       street: '',
       city: '',
       state: '',
@@ -125,12 +141,13 @@ const AddresseBook = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">My Addresses</h1>
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-medium text-gray-900">User Addresses</h2>
         <button
           onClick={() => setIsAdding(true)}
           className="px-3 py-1 bg-blue-600 text-white rounded flex items-center"
+          disabled={isAdding || editingId !== null}
         >
           <FiPlus className="mr-1" /> Add Address
         </button>
@@ -138,11 +155,11 @@ const AddresseBook = () => {
 
       {(isAdding || editingId) && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
             {editingId ? 'Edit Address' : 'Add New Address'}
-          </h2>
+          </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Address Type</label>
               <select
@@ -151,11 +168,97 @@ const AddresseBook = () => {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
-                <option value="shipping">Shipping</option>
-                <option value="billing">Billing</option>
+                <option value={AddressType.SHIPPING}>Shipping</option>
+                <option value={AddressType.BILLING}>Billing</option>
               </select>
             </div>
-            
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+              <input
+                type="text"
+                name="street"
+                value={newAddress.street}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Street address"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={newAddress.city}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="City"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
+                <input
+                  type="text"
+                  name="state"
+                  value={newAddress.state}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="State/Province"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                <input
+                  type="text"
+                  name="postalCode"
+                  value={newAddress.postalCode}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="Postal code"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                <input
+                  type="text"
+                  name="country"
+                  value={newAddress.country}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="Country"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input
+                type="tel"
+                name="phone"
+                value={newAddress.phone}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Phone number"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Additional Information</label>
+              <textarea
+                name="additionalInfo"
+                value={newAddress.additionalInfo}
+                onChange={handleInputChange}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Additional delivery instructions"
+              />
+            </div>
+
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -169,122 +272,42 @@ const AddresseBook = () => {
                 Set as default address
               </label>
             </div>
-          </div>
 
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
-            <input
-              type="text"
-              name="street"
-              value={newAddress.street}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-              <input
-                type="text"
-                name="city"
-                value={newAddress.city}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                onClick={() => {
+                  setIsAdding(false);
+                  setEditingId(null);
+                  setNewAddress({
+                    type: AddressType.SHIPPING,
+                    street: '',
+                    city: '',
+                    state: '',
+                    postalCode: '',
+                    country: 'USA',
+                    isDefault: false,
+                    phone: '',
+                    additionalInfo: ''
+                  });
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingId ? handleUpdateAddress : handleAddAddress}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {editingId ? 'Update Address' : 'Save Address'}
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
-              <input
-                type="text"
-                name="state"
-                value={newAddress.state}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
-              <input
-                type="text"
-                name="postalCode"
-                value={newAddress.postalCode}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-              <input
-                type="text"
-                name="country"
-                value={newAddress.country}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-              <input
-                type="tel"
-                name="phone"
-                value={newAddress.phone}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Additional Information</label>
-            <textarea
-              name="additionalInfo"
-              value={newAddress.additionalInfo}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-
-          <div className="mt-6 flex justify-end space-x-3">
-            <button
-              onClick={() => {
-                setIsAdding(false);
-                setEditingId(null);
-                setNewAddress({
-                  type: 'shipping',
-                  street: '',
-                  city: '',
-                  state: '',
-                  postalCode: '',
-                  country: 'USA',
-                  isDefault: false,
-                  phone: '',
-                  additionalInfo: ''
-                });
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={editingId ? handleUpdateAddress : handleAddAddress}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              {editingId ? 'Update Address' : 'Save Address'}
-            </button>
           </div>
         </div>
       )}
 
       <div className="space-y-4">
         {addresses.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-600">You haven't saved any addresses yet</p>
-          </div>
+          <p className="text-gray-500">No addresses found for this user.</p>
         ) : (
           addresses.map((address) => (
             <div key={address.id} className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -312,6 +335,7 @@ const AddresseBook = () => {
                     onClick={() => handleEditAddress(address.id)}
                     className="text-gray-500 hover:text-blue-600"
                     title="Edit"
+                    disabled={isAdding || editingId !== null}
                   >
                     <FiEdit2 />
                   </button>
@@ -319,6 +343,7 @@ const AddresseBook = () => {
                     onClick={() => handleRemoveAddress(address.id)}
                     className="text-gray-500 hover:text-red-600"
                     title="Delete"
+                    disabled={isAdding || editingId !== null}
                   >
                     <FiTrash2 />
                   </button>
@@ -330,11 +355,11 @@ const AddresseBook = () => {
                   {address.city}, {address.state} {address.postalCode}
                 </p>
                 <p className="text-gray-900">{address.country}</p>
-                {address.additionalInfo && (
-                  <p className="text-gray-600 mt-1">{address.additionalInfo}</p>
-                )}
                 {address.phone && (
                   <p className="text-gray-600 mt-1">Phone: {address.phone}</p>
+                )}
+                {address.additionalInfo && (
+                  <p className="text-gray-600 mt-1">{address.additionalInfo}</p>
                 )}
               </div>
             </div>
@@ -345,4 +370,4 @@ const AddresseBook = () => {
   );
 };
 
-export default AddresseBook;
+export default AdminUserAddresses;
