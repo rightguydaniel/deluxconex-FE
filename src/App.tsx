@@ -12,6 +12,7 @@ import AdminOrdersPage from "./pages/AdminOrderPage";
 import AdminInvoicesPage from "./pages/AdminInvoicesPage";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminDashboard from "./pages/AdminDashboard";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 
 function App() {
   return (
@@ -30,6 +31,8 @@ function App() {
         <Route path="/admin/orders" element={<AdminOrdersPage />} />
         <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
         <Route path="/admin/users" element={<AdminUserManagement />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        
 
       </Routes>
     </BrowserRouter>
