@@ -66,7 +66,8 @@ export const Auth = () => {
           password: formData.password,
         });
         // Handle successful login (store token, redirect, etc.)
-        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("token", response.data.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.data.user));
         setMessage("Login successful!");
         response.data.data.user.role === "admin"
           ? navigate("/admin")
@@ -79,6 +80,7 @@ export const Auth = () => {
           phone: formData.phone,
           password: formData.password,
         });
+        console.log(response?.data);
         setMessage("Registration successful! Please log in.");
         setActiveTab("login");
       } else if (activeTab === "password") {

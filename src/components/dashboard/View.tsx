@@ -1,12 +1,20 @@
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   handleOrderClick: () => void;
   handleInvoiceClick: () => void;
 }
 
-export const View: React.FC<Props> = ({ handleOrderClick, handleInvoiceClick }) => {
-  //   const navigate = useNavigate();
+export const View: React.FC<Props> = ({
+  handleOrderClick,
+  handleInvoiceClick,
+}) => {
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/");
+  };
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
   return (
     <>
       <ul>
@@ -22,17 +30,20 @@ export const View: React.FC<Props> = ({ handleOrderClick, handleInvoiceClick }) 
         >
           Invoice
         </li>
-        <li className="w-full text-blue-500 text-lg font-extralight hover:bg-gray-100 hover:border-none border-b border-gray-100 py-2 cursor-pointer">
+        <li
+          className="w-full text-blue-500 text-lg font-extralight hover:bg-gray-100 hover:border-none border-b border-gray-100 py-2 cursor-pointer"
+          onClick={handleLogout}
+        >
           Logout
         </li>
       </ul>
       <div className="mt-4">
         <p className="font-extrabold text-lg">Contact phone</p>
         <a
-          href="tel:+647824628489"
+          href={`tel:${user.phone}`}
           className="text-blue-500 border-b border-gray-100 text-lg font-extralight"
         >
-          647824628489
+          {user.phone}
         </a>
       </div>
     </>

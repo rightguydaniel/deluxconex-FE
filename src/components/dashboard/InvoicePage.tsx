@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FiFileText, FiDownload, FiMail,  FiCheckCircle, FiAlertCircle, FiXCircle } from 'react-icons/fi';
 
 const InvoicesPage = () => {
-  const [invoices, setInvoices] = useState([
+  const [invoices] = useState([
     {
       id: 'inv-001',
       orderId: 'ord-001',
@@ -33,7 +33,6 @@ const InvoicesPage = () => {
       terms: 'Payment due within 14 days'
     }
   ]);
-  setInvoices(invoices)
 
   const getStatusIcon = (status: string) => {
     switch (status) {

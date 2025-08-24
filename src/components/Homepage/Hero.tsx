@@ -11,19 +11,33 @@ import { Ri24HoursLine } from "react-icons/ri";
 import video from "/top.mp4";
 import React from "react";
 import { FaTruckFast } from "react-icons/fa6";
+import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
-  const imageLinks = {
-    hazmat: "/shop",
-    refrigeration: "/shop",
-    newGray: "/shop",
-    conjoined: "/shop",
-    office: "/shop",
-    fabrication: "/shop",
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (categoryName: string) => {
+    const encodedCategory = encodeURIComponent(categoryName);
+    navigate(`/shop/${encodedCategory}`);
   };
 
-  const handleImageClick = (link: string) => {
-    window.location.href = link;
+  const handleImageClick = (category: string) => {
+    // Map category labels to appropriate category names for the URL
+    const categoryMap: { [key: string]: string } = {
+      "Hazmat storage": "hazmat storage",
+      "Cold storage": "cold storage",
+      "New containers": "new",
+      "Conjoined containers": "conjoined containers",
+      "Office containers": "office containers",
+      Fabrication: "parts",
+    };
+
+    const categoryName = categoryMap[category] || "parts";
+    handleCategoryClick(categoryName);
+  };
+
+  const handleShopNowClick = () => {
+    navigate("/shop");
   };
 
   const containerVariants = {
@@ -65,37 +79,31 @@ export const Hero = () => {
       img: hazmat,
       alt: "hazmat",
       label: "Hazmat storage",
-      link: imageLinks.hazmat,
     },
     {
       img: refrigeration,
       alt: "refrigeration",
       label: "Cold storage",
-      link: imageLinks.refrigeration,
     },
     {
       img: newGray,
       alt: "New containers",
       label: "New containers",
-      link: imageLinks.newGray,
     },
     {
       img: conjoined,
       alt: "Conjoined containers",
       label: "Conjoined containers",
-      link: imageLinks.conjoined,
     },
     {
       img: office,
       alt: "Office containers",
       label: "Office containers",
-      link: imageLinks.office,
     },
     {
       img: fabrication,
       alt: "Fabrication",
       label: "Fabrication",
-      link: imageLinks.fabrication,
     },
   ];
 
@@ -124,7 +132,7 @@ export const Hero = () => {
                 variants={itemVariants}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => handleImageClick(category.link)}
+                onClick={() => handleImageClick(category.label)}
               >
                 <img
                   src={category.img}
@@ -178,6 +186,7 @@ export const Hero = () => {
               className="bg-light text-dark py-2 px-6 md:py-3 md:px-8 lg:py-4 lg:px-12 rounded text-base md:text-lg font-medium hover:bg-light/90 transition"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleShopNowClick}
             >
               Shop now
             </motion.button>

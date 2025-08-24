@@ -17,6 +17,41 @@ import { IoSearch } from "react-icons/io5";
 import { FiLogIn } from "react-icons/fi";
 import { FaGears, FaMapLocationDot } from "react-icons/fa6";
 
+// Create a separate component for category items
+const CategoryItem = ({
+  name,
+  Icon,
+  categoryName,
+}: {
+  name: string;
+  Icon: React.ElementType;
+  categoryName: string;
+}) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    const encodedCategory = encodeURIComponent(categoryName);
+    navigate(`/shop/${encodedCategory}`);
+  };
+
+  return (
+    <motion.li
+      whileHover={{ scale: 1.02, backgroundColor: "#0b2f45" }}
+      whileTap={{ scale: 0.98 }}
+      className="flex items-center py-2 pl-5 cursor-pointer rounded-lg group"
+      onClick={handleClick}
+    >
+      <span className="mr-3">
+        <Icon size="15" className="text-[#475367] group-hover:text-[#e7d8c2]" />
+      </span>
+      <span className="font-medium text-sm text-gray-400 leading-[145%] group-hover:text-white">
+        {name}
+      </span>
+    </motion.li>
+  );
+};
+
+// Regular Item component for non-category navigation
 const Item = ({
   name,
   Icon,
@@ -75,16 +110,27 @@ export const Sidebar = () => {
         {/* Navigation items */}
         <ul className="p-1 space-y-1">
           <Item name="Buy" Icon={FaHandshake} path="/shop" />
-          <Item name="Rent" Icon={TfiReload} path="/shop" />
-          <Item name="Cold storage" Icon={BiHealth} path="/shop" />
+          <CategoryItem name="Rent" Icon={TfiReload} categoryName="rent" />
+          <CategoryItem
+            name="Cold storage"
+            Icon={BiHealth}
+            categoryName="cold storage"
+          />
           <Item name="Parts" Icon={FaGears} path="/shop" />
-          <Item name="Customizations" Icon={FaHammer} path="/shop" />
-          <Item name="Chasis & trailers" Icon={FaTrailer} path="/shop" />
+          <CategoryItem
+            name="Customizations"
+            Icon={FaHammer}
+            categoryName="parts"
+          />
+          <CategoryItem
+            name="Chasis & trailers"
+            Icon={FaTrailer}
+            categoryName="parts"
+          />
           <Item name="Gallery" Icon={GrGallery} path="/gallery" />
           <Item name="Delivery" Icon={FaTruck} path="/delivery" />
           <Item name="Inventory" Icon={FaMapLocationDot} path="/inventory" />
           <Item name="Contact us" Icon={FaEnvelopeOpen} path="/contact" />
-          {/* <Item name="Conexbuilder" Icon={FaCirclePlay} path="/builder" /> */}
           <Item name="Cart" Icon={FaShoppingCart} path="/auth" />
           <Item name="My account" Icon={FiLogIn} path="/auth" />
           <Item name="Search" Icon={IoSearch} path="/shop" />

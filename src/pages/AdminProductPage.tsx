@@ -1,8 +1,17 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
-import AdminLayout from './AdminLayout';
-import ProductForm from './ProductForm';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FiSearch,
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiChevronLeft,
+  FiChevronRight,
+  FiRefreshCw,
+} from "react-icons/fi";
+import AdminLayout from "./AdminLayout";
+import ProductForm from "./ProductForm";
+import api from "../services/api";
 
 interface Product {
   id: string;
@@ -17,18 +26,40 @@ interface Product {
   categories?: string[];
 }
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 const AdminProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  // Fetch products on component mount
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/admin/products");
+      if (response.data.success) {
+        setProducts(response.data.data.products || []);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
@@ -47,34 +78,110 @@ const AdminProductsPage = () => {
     setIsFormOpen(true);
   };
 
-  const handleDeleteProduct = (productId: string) => {
-    setProducts(products.filter(p => p.id !== productId));
-    if (paginatedProducts.length === 1 && currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+  const handleDeleteProduct = async (productId: string) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) {
+      return;
+    }
+
+    try {
+      setDeleting(productId);
+      const response = await api.delete(`/admin/products/${productId}`);
+
+      if (response.data.success) {
+        setProducts(products.filter((p) => p.id !== productId));
+        if (paginatedProducts.length === 1 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      alert("Failed to delete product");
+    } finally {
+      setDeleting(null);
     }
   };
 
-  const handleSubmit = (productData: Omit<Product, 'id'>) => {
-    if (editingProduct) {
-      setProducts(products.map(p => p.id === editingProduct.id ? { ...productData, id: editingProduct.id } : p));
-    } else {
-      setProducts([...products, { ...productData, id: Date.now().toString() }]);
+  const handleSubmit = async (productData: Omit<Product, "id">) => {
+    try {
+      if (editingProduct) {
+        // Edit existing product
+        const formData = new FormData();
+        formData.append("productData", JSON.stringify(productData));
+
+        const response = await api.put(
+          `/admin/products/${editingProduct.id}`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        if (response.data.success) {
+          setProducts(
+            products.map((p) =>
+              p.id === editingProduct.id ? response.data.data : p
+            )
+          );
+          setIsFormOpen(false);
+        }
+      } else {
+        // Create new product
+        // const formData = new FormData();
+        // formData.append("productData", JSON.stringify(productData));
+
+        // const response = await api.post("/admin/products", formData, {
+        //   headers: {
+        //     "Content-Type": "multipart/form-data",
+        //   },
+        // });
+
+        // if (response.data) {
+        //   setProducts([...products, response.data]);
+        //   setIsFormOpen(false);
+        //   fetchProducts(); // Refresh the list to get the complete product data
+        // }
+        fetchProducts();
+        setIsFormOpen(false);
+      }
+    } catch (error) {
+      console.error("Error saving product:", error);
+      alert("Failed to save product");
     }
-    setIsFormOpen(false);
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex justify-center items-center h-64">
+          <FiRefreshCw className="animate-spin text-2xl text-blue-600" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">Products</h1>
-          <button
-            onClick={handleAddProduct}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <FiPlus className="mr-2" />
-            Add Product
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={fetchProducts}
+              className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              <FiRefreshCw className="mr-2" />
+              Refresh
+            </button>
+            <button
+              onClick={handleAddProduct}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <FiPlus className="mr-2" />
+              Add Product
+            </button>
+          </div>
         </div>
 
         <div className="relative">
@@ -95,10 +202,21 @@ const AdminProductsPage = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Image
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    SKU
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -110,22 +228,49 @@ const AdminProductsPage = () => {
                     exit={{ opacity: 0 }}
                     className="hover:bg-gray-50"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.sku}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.price.toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.name}
+                          className="h-12 w-12 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">
+                            No Image
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {product.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {product.sku}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      ${product.price}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleEditProduct(product)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-blue-600 hover:text-blue-900 p-1"
+                          disabled={deleting === product.id}
                         >
                           <FiEdit2 />
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(product.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 p-1"
+                          disabled={deleting === product.id}
                         >
-                          <FiTrash2 />
+                          {deleting === product.id ? (
+                            <FiRefreshCw className="animate-spin" />
+                          ) : (
+                            <FiTrash2 />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -137,7 +282,9 @@ const AdminProductsPage = () => {
 
           {filteredProducts.length === 0 && (
             <div className="p-6 text-center text-gray-500">
-              No products found
+              {searchTerm
+                ? "No products found matching your search"
+                : "No products found"}
             </div>
           )}
 
@@ -152,7 +299,9 @@ const AdminProductsPage = () => {
                   Previous
                 </button>
                 <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  onClick={() =>
+                    setCurrentPage(Math.min(totalPages, currentPage + 1))
+                  }
                   disabled={currentPage === totalPages}
                   className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >
@@ -162,32 +311,58 @@ const AdminProductsPage = () => {
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Showing <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
-                    <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)}</span> of{' '}
-                    <span className="font-medium">{filteredProducts.length}</span> results
+                    Showing{" "}
+                    <span className="font-medium">
+                      {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-medium">
+                      {Math.min(
+                        currentPage * ITEMS_PER_PAGE,
+                        filteredProducts.length
+                      )}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-medium">
+                      {filteredProducts.length}
+                    </span>{" "}
+                    results
                   </p>
                 </div>
                 <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <nav
+                    className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                    aria-label="Pagination"
+                  >
                     <button
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      onClick={() =>
+                        setCurrentPage(Math.max(1, currentPage - 1))
+                      }
                       disabled={currentPage === 1}
                       className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
                     >
                       <span className="sr-only">Previous</span>
                       <FiChevronLeft className="h-5 w-5" />
                     </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`}
-                      >
-                        {page}
-                      </button>
-                    ))}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            currentPage === page
+                              ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                              : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    )}
                     <button
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      onClick={() =>
+                        setCurrentPage(Math.min(totalPages, currentPage + 1))
+                      }
                       disabled={currentPage === totalPages}
                       className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
                     >

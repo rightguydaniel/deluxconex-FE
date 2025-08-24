@@ -21,19 +21,17 @@ function App() {
         <Route path="/" index element={<Homepage />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/dashboard/:tab?" element={<Dashboard />} />
-        <Route path="/shop" element={<Shop />} />
+        <Route path="/shop/:category?" element={<Shop />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/delivery" element={<Delivery />} />
-        <Route path="/product" element={<Product />} />
+        <Route path="/product/:id" element={<Product />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/products" element={<AdminProductsPage />} />
         <Route path="/admin/orders" element={<AdminOrdersPage />} />
         <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
         <Route path="/admin/users" element={<AdminUserManagement />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-        
-
       </Routes>
     </BrowserRouter>
   );

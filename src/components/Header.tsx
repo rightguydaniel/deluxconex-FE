@@ -12,16 +12,21 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const navigate = useNavigate();
   const isDesktop = useMediaQuery({ minWidth: 1024 });
 
+  const handleCategoryClick = (categoryName: string) => {
+    const encodedCategory = encodeURIComponent(categoryName);
+    navigate(`/shop/${encodedCategory}`);
+  };
+
   const navItems = [
-    { name: "Buy", link: "/shop" },
-    { name: "Rent", link: "/shop" },
-    { name: "Cold storage", link: "/shop" },
-    { name: "Parts", link: "/shop" },
-    { name: "Customizations", link: "/shop" },
-    { name: "Chasis & trailers", link: "/shop" },
-    { name: "Gallery", link: "/gallery" },
-    { name: "Delivery", link: "/delivery" },
-    { name: "Inventory", link: "/inventory" },
+    { name: "Buy", action: () => navigate("/shop") },
+    { name: "Rent", action: () => handleCategoryClick("rent") },
+    { name: "Cold storage", action: () => handleCategoryClick("cold storage") },
+    { name: "Parts", action: () => handleCategoryClick("parts") },
+    { name: "Customizations", action: () => handleCategoryClick("parts") },
+    { name: "Chasis & trailers", action: () => handleCategoryClick("parts") },
+    { name: "Gallery", action: () => navigate("/gallery") },
+    { name: "Delivery", action: () => navigate("/delivery") },
+    { name: "Inventory", action: () => navigate("/inventory") },
   ];
 
   // Desktop Header
@@ -40,7 +45,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
               key={index}
               whileHover={{ backgroundColor: "#4B5563" }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate(item.link)}
+              onClick={item.action}
               className="hover:cursor-pointer py-1 px-3 rounded"
             >
               {item.name}
@@ -117,7 +122,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.1)" }}
           whileTap={{ scale: 0.9 }}
           className="border border-white rounded p-1 cursor-pointer"
-          onClick={() => navigate("/dashboard/cart")}
+          onClick={() => navigate("/cart")}
         >
           <MdOutlineShoppingCart size={18} />
         </motion.div>

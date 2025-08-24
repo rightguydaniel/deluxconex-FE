@@ -1,99 +1,251 @@
-import { useState } from 'react';
-import { FiShoppingCart, FiTrash2, FiPlus, FiMinus, FiChevronRight } from 'react-icons/fi';
+import { useState, useEffect } from "react";
+import {
+  FiShoppingCart,
+  FiTrash2,
+  FiPlus,
+  FiMinus,
+  FiChevronRight,
+  FiArrowLeft,
+} from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
+
+interface CartItem {
+  productId: string;
+  name: string;
+  basePrice: number;
+  quantity: number;
+  image: string;
+  selectedDimension?: {
+    dimension: string;
+    priceAdjustment?: number;
+  };
+  selectedCondition?: {
+    condition: string;
+    priceAdjustment?: number;
+  };
+  selectedDelivery?: {
+    method: string;
+    price: number;
+  };
+  itemPrice: number;
+  totalPrice: number;
+}
+
+interface Cart {
+  items: CartItem[];
+  subtotal: number;
+  shipping: number;
+  tax: number;
+  total: number;
+}
 
 const CartPage = () => {
-  const [cart, setCart] = useState({
-    items: [
-      {
-        productId: 'cont-20ft',
-        name: '20ft Shipping Container',
-        basePrice: 2500,
-        quantity: 1,
-        image: '/container-20ft.jpg',
-        selectedDimension: {
-          dimension: '20ft',
-          priceAdjustment: 0
-        },
-        selectedCondition: {
-          condition: 'New',
-          priceAdjustment: 300
-        },
-        selectedDelivery: {
-          method: 'Local Delivery',
-          price: 250
-        },
-        itemPrice: 2800,
-        totalPrice: 2800
-      },
-      {
-        productId: 'cont-40ft',
-        name: '40ft Shipping Container',
-        basePrice: 3800,
-        quantity: 1,
-        image: '/container-40ft.jpg',
-        selectedDimension: {
-          dimension: '40ft',
-          priceAdjustment: 0
-        },
-        selectedCondition: {
-          condition: 'Used',
-          priceAdjustment: -500
-        },
-        selectedDelivery: {
-          method: 'Pickup',
-          price: 0
-        },
-        itemPrice: 3300,
-        totalPrice: 3300
-      }
-    ],
-    subtotal: 6100,
-    shipping: 250,
-    tax: 635,
-    total: 6985
+  const [cart, setCart] = useState<Cart>({
+    items: [],
+    subtotal: 0,
+    shipping: 0,
+    tax: 0,
+    total: 0,
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
-  const updateQuantity = (index: number, newQuantity: number) => {
+  // Fetch cart data from backend
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          navigate("/auth");
+          return;
+        }
+
+        const response = await api.get("/user/cart", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        console.log("Cart response:", response.data);
+
+        if (response.data.status === "success") {
+          setCart(response.data.data);
+        } else {
+          throw new Error(response.data.message || "Failed to fetch cart");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+        console.error("Error fetching cart:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCart();
+  }, [navigate]);
+
+  const updateQuantity = async (index: number, newQuantity: number) => {
     if (newQuantity < 1) return;
-    
-    const newCart = { ...cart };
-    newCart.items[index].quantity = newQuantity;
-    newCart.items[index].totalPrice = newCart.items[index].itemPrice * newQuantity;
-    
-    // Recalculate totals
-    newCart.subtotal = newCart.items.reduce((sum, item) => sum + item.totalPrice, 0);
-    newCart.tax = newCart.subtotal * 0.1; // Example 10% tax
-    newCart.total = newCart.subtotal + newCart.shipping + newCart.tax;
-    
-    setCart(newCart);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/auth");
+        return;
+      }
+
+      const updatedItem = { ...cart.items[index], quantity: newQuantity };
+
+      const response = await api.put("/user/cart/update", updatedItem, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.status === "success") {
+        setCart(response.data.data);
+      } else {
+        throw new Error("Failed to update quantity");
+      }
+    } catch (err) {
+      console.error("Error updating quantity:", err);
+      alert("Failed to update quantity. Please try again.");
+    }
   };
 
-  const removeItem = (index: number) => {
-    const newCart = { ...cart };
-    newCart.items.splice(index, 1);
-    
-    // Recalculate totals
-    newCart.subtotal = newCart.items.reduce((sum, item) => sum + item.totalPrice, 0);
-    newCart.tax = newCart.subtotal * 0.1;
-    newCart.total = newCart.subtotal + newCart.shipping + newCart.tax;
-    
-    setCart(newCart);
+  const removeItem = async (index: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/auth");
+        return;
+      }
+
+      const productId = cart.items[index].productId;
+
+      const response = await api.delete(`/user/cart/remove/${productId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.success) {
+        setCart(response.data.data);
+      } else {
+        throw new Error("Failed to remove item");
+      }
+    } catch (err) {
+      console.error("Error removing item:", err);
+      alert("Failed to remove item. Please try again.");
+    }
   };
+
+  // CartPage.tsx - Update the handleCheckout function
+  const handleCheckout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/auth");
+        return;
+      }
+
+      const response = await api.post(
+        "/user/checkout",
+        { cart },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.status === "success") {
+        const { approvalUrl, orderId, invoiceId } = response.data.data;
+
+        // Store order info in localStorage for retrieval after payment
+        localStorage.setItem(
+          "currentOrder",
+          JSON.stringify({
+            orderId,
+            invoiceId,
+          })
+        );
+
+        // Redirect to PayPal
+        window.location.href = approvalUrl;
+      } else {
+        throw new Error(response.data.message || "Failed to create checkout");
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("Failed to proceed to checkout. Please try again.");
+    }
+  };
+
+  const handleContinueShopping = () => {
+    navigate("/shop");
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="flex items-center mb-6">
+          <FiShoppingCart className="text-gray-600 mr-2" />
+          <h1 className="text-2xl font-bold text-gray-800">Your Cart</h1>
+        </div>
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <p className="text-gray-600">Loading your cart...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="flex items-center mb-6">
+          <FiShoppingCart className="text-gray-600 mr-2" />
+          <h1 className="text-2xl font-bold text-gray-800">Your Cart</h1>
+        </div>
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex items-center mb-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="mr-3 text-gray-600 hover:text-gray-800"
+        >
+          <FiArrowLeft size={20} />
+        </button>
         <FiShoppingCart className="text-gray-600 mr-2" />
         <h1 className="text-2xl font-bold text-gray-800">Your Cart</h1>
         <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
-          {cart.items.length} item{cart.items.length !== 1 ? 's' : ''}
+          {cart.items.length} item{cart.items.length !== 1 ? "s" : ""}
         </span>
       </div>
 
       {cart.items.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <p className="text-gray-600 mb-4">Your cart is empty</p>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <button
+            onClick={handleContinueShopping}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
             Browse Containers
           </button>
         </div>
@@ -102,18 +254,26 @@ const CartPage = () => {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow overflow-hidden">
               {cart.items.map((item, index) => (
-                <div key={index} className="border-b border-gray-200 last:border-b-0">
+                <div
+                  key={`${item.productId}-${index}`}
+                  className="border-b border-gray-200 last:border-b-0"
+                >
                   <div className="p-4 flex">
-                    <div className="flex-shrink-0 h-24 w-24 rounded-md overflow-hidden">
+                    <div className="flex-shrink-0 h-24 w-24 rounded-md overflow-hidden bg-gray-200">
                       <img
-                        src={item.image}
+                        src={item.image || "/container-placeholder.jpg"}
                         alt={item.name}
                         className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "/container-placeholder.jpg";
+                        }}
                       />
                     </div>
                     <div className="ml-4 flex-1">
                       <div className="flex justify-between">
-                        <h3 className="text-lg font-medium text-gray-900">{item.name}</h3>
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {item.name}
+                        </h3>
                         <button
                           onClick={() => removeItem(index)}
                           className="text-gray-400 hover:text-red-500"
@@ -122,26 +282,37 @@ const CartPage = () => {
                         </button>
                       </div>
                       <p className="text-gray-600 text-sm mt-1">
-                        Dimension: {item.selectedDimension.dimension}
+                        Dimension:{" "}
+                        {item.selectedDimension?.dimension || "Standard"}
                       </p>
                       <p className="text-gray-600 text-sm">
-                        Condition: {item.selectedCondition.condition}
+                        Condition:{" "}
+                        {item.selectedCondition?.condition || "Not specified"}
                       </p>
                       <p className="text-gray-600 text-sm">
-                        Delivery: {item.selectedDelivery.method} (${item.selectedDelivery.price})
+                        Delivery:{" "}
+                        {item.selectedDelivery?.method || "Not selected"}
+                        {item.selectedDelivery?.price
+                          ? ` ($${item.selectedDelivery.price})`
+                          : ""}
                       </p>
-                      
+
                       <div className="flex justify-between items-center mt-2">
                         <div className="flex items-center border border-gray-300 rounded">
                           <button
-                            onClick={() => updateQuantity(index, item.quantity - 1)}
+                            onClick={() =>
+                              updateQuantity(index, item.quantity - 1)
+                            }
                             className="px-2 py-1 text-gray-600 hover:bg-gray-100"
+                            disabled={item.quantity <= 1}
                           >
                             <FiMinus size={14} />
                           </button>
                           <span className="px-3">{item.quantity}</span>
                           <button
-                            onClick={() => updateQuantity(index, item.quantity + 1)}
+                            onClick={() =>
+                              updateQuantity(index, item.quantity + 1)
+                            }
                             className="px-2 py-1 text-gray-600 hover:bg-gray-100"
                           >
                             <FiPlus size={14} />
@@ -160,28 +331,41 @@ const CartPage = () => {
 
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Order Summary</h2>
-              
+              <h2 className="text-lg font-medium text-gray-900 mb-4">
+                Order Summary
+              </h2>
+
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="text-gray-900">${cart.subtotal.toFixed(2)}</span>
+                  <span className="text-gray-900">
+                    ${cart.subtotal.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
-                  <span className="text-gray-900">${cart.shipping.toFixed(2)}</span>
+                  <span className="text-gray-900">
+                    ${cart.shipping.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tax</span>
                   <span className="text-gray-900">${cart.tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-t border-gray-200 pt-3 mt-3">
-                  <span className="text-lg font-medium text-gray-900">Total</span>
-                  <span className="text-lg font-medium text-gray-900">${cart.total.toFixed(2)}</span>
+                  <span className="text-lg font-medium text-gray-900">
+                    Total
+                  </span>
+                  <span className="text-lg font-medium text-gray-900">
+                    ${cart.total.toFixed(2)}
+                  </span>
                 </div>
               </div>
 
-              <button className="mt-6 w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 flex items-center justify-center">
+              <button
+                onClick={handleCheckout}
+                className="mt-6 w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 flex items-center justify-center"
+              >
                 Proceed to Checkout <FiChevronRight className="ml-2" />
               </button>
             </div>

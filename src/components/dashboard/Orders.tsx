@@ -9,7 +9,7 @@ import {
 } from "react-icons/fi";
 
 const Orders = () => {
-  const [orders, setOrders] = useState([
+  const [orders] = useState([
     {
       id: "ord-001",
       items: [
@@ -73,7 +73,6 @@ const Orders = () => {
       createdAt: "2023-04-20T14:15:00Z",
     },
   ]);
-  setOrders(orders)
 
   const getStatusIcon = (status: string) => {
     switch (status) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMediaQuery } from "react-responsive";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
@@ -8,44 +8,77 @@ import { Filter } from "../components/shop/Filter";
 import { Content } from "../components/shop/Content";
 import container from "../assets/images/container.webp";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiFilter } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { FiFilter, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../services/api";
+
+// Product Interface
+interface Product {
+  id: string;
+  name: string;
+  sku: string;
+  price: number;
+  description: string;
+  images: string[];
+  categories: string[];
+  dimensions: any[];
+  delivery: any[];
+}
+
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalProducts: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
 
 // SaleItem Component
 interface SaleItemProps {
-  image: string;
-  title: string;
-  price: string;
+  product: Product;
   onAddToCart?: () => void;
   onClick?: () => void;
 }
 
-const SaleItem = ({ image, title, price, onAddToCart }: SaleItemProps) => {
+const SaleItem = ({ product, onAddToCart }: SaleItemProps) => {
   const navigate = useNavigate();
+
   return (
     <motion.div
       whileHover={{ y: -5 }}
       className="flex bg-white p-3 cursor-pointer rounded-lg mb-3 shadow-sm hover:shadow-md transition-shadow"
-      onClick={() => navigate("/product")}
+      onClick={() => navigate(`/product/${product.id}`)}
     >
       <div className="w-1/3">
         <img
-          src={image}
-          alt={title}
+          src={
+            product.images && product.images.length > 0
+              ? product.images[0]
+              : container
+          }
+          alt={product.name}
           className="w-full h-28 object-contain bg-gray-50 rounded-lg"
         />
       </div>
       <div className="w-2/3 pl-3 flex flex-col justify-between">
         <div>
           <p className="text-sm font-medium mb-1 text-dark line-clamp-2">
-            {title}
+            {product.name}
           </p>
-          <p className="text-md font-bold text-dark mb-2">${price}</p>
+          <p className="text-md font-bold text-dark mb-2">
+            ${product.price.toLocaleString()}
+          </p>
+          {product.sku && (
+            <p className="text-xs text-gray-500">SKU: {product.sku}</p>
+          )}
         </div>
         <motion.button
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
-          onClick={onAddToCart}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddToCart?.();
+          }}
           className="bg-light text-dark rounded py-3 px-2 text-lg font-bold hover:bg-light/90 transition-colors self-start"
         >
           Add to cart
@@ -55,25 +88,66 @@ const SaleItem = ({ image, title, price, onAddToCart }: SaleItemProps) => {
   );
 };
 
-// Dummy Data
-const dummyProducts = [
-  { id: 1, image: container, title: "20ft Standard Container", price: "1200" },
-  { id: 2, image: container, title: "40ft High Cube Container", price: "2400" },
-  {
-    id: 3,
-    image: container,
-    title: "10ft Refrigerated Container",
-    price: "1800",
-  },
-  { id: 4, image: container, title: "Flat Rack Container", price: "2100" },
-  { id: 5, image: container, title: "Open Top Container", price: "1950" },
-];
-
 export const Shop = () => {
+  const { category } = useParams<{ category: string }>();
   const isDesktop = useMediaQuery({ minWidth: 1024 });
   const [showSidebar, setShowSidebar] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [cart, setCart] = useState<{ id: number; quantity: number }[]>([]);
+  const [cart, setCart] = useState<{ id: string; quantity: number }[]>([]);
+  console.log(cart)
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalProducts: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
+
+  // Fetch products based on category and page
+  const fetchProducts = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      let url = category
+        ? `/products/category/${category}?page=${page}&limit=20`
+        : `/products/products?page=${page}&limit=20`;
+
+      const response = await api.get(url);
+
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(`Failed to fetch products: ${response.status}`);
+      }
+
+      const data = response.data;
+      console.log(data);
+
+      if (data.success) {
+        setProducts(data.data.products || []);
+        setPagination({
+          currentPage: data.data.pagination.currentPage,
+          totalPages: data.data.pagination.totalPages,
+          totalProducts: data.data.pagination.totalProducts,
+          hasNext: data.data.pagination.hasNext,
+          hasPrev: data.data.pagination.hasPrev,
+        });
+      } else {
+        throw new Error(data.message || "Failed to fetch products");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Error fetching products:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchProducts(1);
+  }, [category]);
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -83,7 +157,7 @@ export const Shop = () => {
     setShowMobileFilters(!showMobileFilters);
   };
 
-  const addToCart = (productId: number) => {
+  const addToCart = (productId: string) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === productId);
       if (existing) {
@@ -95,8 +169,35 @@ export const Shop = () => {
       }
       return [...prev, { id: productId, quantity: 1 }];
     });
-    console.log(cart);
   };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > pagination.totalPages) return;
+
+    setCurrentPage(newPage);
+    fetchProducts(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-100 relative">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-xl">Loading products...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-gray-100 relative">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-xl text-red-500">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100 relative">
@@ -126,6 +227,16 @@ export const Shop = () => {
 
         {/* Page Content */}
         <main className="flex-1 pt-2 px-4">
+          {/* Page Title */}
+          <div className="mb-4">
+            <h1 className="text-2xl font-bold text-dark">
+              {category ? `Category: ${category}` : "All Products"}
+            </h1>
+            <p className="text-gray-600">
+              Showing {products.length} of {pagination.totalProducts} products
+            </p>
+          </div>
+
           {/* Desktop Layout */}
           {isDesktop ? (
             <div className="flex">
@@ -137,16 +248,60 @@ export const Shop = () => {
               {/* Product List - Middle */}
               <div className="w-2/4 px-2">
                 <div className="space-y-4">
-                  {dummyProducts.map((product) => (
+                  {products.map((product) => (
                     <SaleItem
                       key={product.id}
-                      image={product.image}
-                      title={product.title}
-                      price={product.price}
+                      product={product}
                       onAddToCart={() => addToCart(product.id)}
                     />
                   ))}
                 </div>
+
+                {/* Pagination */}
+                {pagination.totalPages > 1 && (
+                  <div className="flex justify-center items-center mt-8 space-x-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={!pagination.hasPrev}
+                      className={`p-2 rounded-lg border ${
+                        pagination.hasPrev
+                          ? "bg-white text-dark hover:bg-gray-100"
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      }`}
+                    >
+                      <FiChevronLeft size={20} />
+                    </button>
+
+                    {Array.from(
+                      { length: pagination.totalPages },
+                      (_, i) => i + 1
+                    ).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`w-10 h-10 rounded-lg border ${
+                          currentPage === page
+                            ? "bg-dark text-light"
+                            : "bg-white text-dark hover:bg-gray-100"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={!pagination.hasNext}
+                      className={`p-2 rounded-lg border ${
+                        pagination.hasNext
+                          ? "bg-white text-dark hover:bg-gray-100"
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      }`}
+                    >
+                      <FiChevronRight size={20} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Content - Right Side */}
@@ -190,16 +345,47 @@ export const Shop = () => {
 
               {/* Product List */}
               <div className="space-y-3 mb-4">
-                {dummyProducts.map((product) => (
+                {products.map((product) => (
                   <SaleItem
                     key={product.id}
-                    image={product.image}
-                    title={product.title}
-                    price={product.price}
+                    product={product}
                     onAddToCart={() => addToCart(product.id)}
                   />
                 ))}
               </div>
+
+              {/* Pagination for mobile */}
+              {pagination.totalPages > 1 && (
+                <div className="flex justify-center items-center my-4 space-x-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={!pagination.hasPrev}
+                    className={`p-2 rounded-lg border ${
+                      pagination.hasPrev
+                        ? "bg-white text-dark hover:bg-gray-100"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    <FiChevronLeft size={20} />
+                  </button>
+
+                  <span className="text-sm text-gray-600">
+                    Page {currentPage} of {pagination.totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={!pagination.hasNext}
+                    className={`p-2 rounded-lg border ${
+                      pagination.hasNext
+                        ? "bg-white text-dark hover:bg-gray-100"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    <FiChevronRight size={20} />
+                  </button>
+                </div>
+              )}
 
               {/* Content */}
               <div className="bg-white rounded-lg shadow-sm p-4">

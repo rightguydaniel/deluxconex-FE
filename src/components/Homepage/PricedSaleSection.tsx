@@ -1,67 +1,107 @@
 import { useNavigate } from "react-router-dom";
 import container from "../../assets/images/container.webp";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import api from "../../services/api";
 
-interface ContainerItem {
+interface Product {
+  id: string;
   name: string;
-  price: string;
-  image: string;
-  alt: string;
-}
-
-interface FilterButton {
-  label: string;
+  price: number;
+  images: string[];
+  categories: string[];
 }
 
 export const PricedSaleSection = () => {
   const navigate = useNavigate();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const containerItems: ContainerItem[] = [
-    {
-      name: "20ft Shipping Container",
-      price: "$100.00",
-      image: container,
-      alt: "20ft shipping container",
-    },
-    {
-      name: "40ft Shipping Container",
-      price: "$150.00",
-      image: container,
-      alt: "40ft shipping container",
-    },
-    {
-      name: "High Cube Container",
-      price: "$200.00",
-      image: container,
-      alt: "High cube shipping container",
-    },
-    {
-      name: "Refrigerated Container",
-      price: "$250.00",
-      image: container,
-      alt: "Refrigerated shipping container",
-    },
-    {
-      name: "Open Top Container",
-      price: "$180.00",
-      image: container,
-      alt: "Open top shipping container",
-    },
-    {
-      name: "Flat Rack Container",
-      price: "$220.00",
-      image: container,
-      alt: "Flat rack shipping container",
-    },
+  // Fetch products from backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get("/products/products?limit=5");
+
+        if (response.status < 200 || response.status >= 300) {
+          throw new Error(`Failed to fetch products: ${response.status}`);
+        }
+
+        const data = response.data;
+
+        if (data.success) {
+          setProducts(data.data.products || []);
+        } else {
+          throw new Error(data.message || "Failed to fetch products");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+        console.error("Error fetching products:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const handleCategoryClick = (categoryName: string) => {
+    const encodedCategory = encodeURIComponent(categoryName);
+    navigate(`/shop/${encodedCategory}`);
+  };
+
+  const handleShopAllClick = () => {
+    navigate("/shop");
+  };
+
+  const handleProductClick = (productId: string) => {
+    navigate(`/product/${productId}`);
+  };
+
+  const filterButtons = [
+    { label: "40ft", category: "40ft" },
+    { label: "20ft", category: "20ft" },
+    { label: "Ground level office", category: "ground level office" },
+    { label: "Cold storage", category: "cold storage" },
+    { label: "Custom containers", category: "parts" },
   ];
 
-  const filterButtons: FilterButton[] = [
-    { label: "40ft" },
-    { label: "20ft" },
-    { label: "Ground level office" },
-    { label: "Cold storage" },
-    { label: "Custom containers" },
-  ];
+  if (loading) {
+    return (
+      <div className="py-10 md:py-20 px-4 md:px-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <h3 className="text-dark text-2xl md:text-3xl font-bold">
+            Shipping containers for sale
+          </h3>
+          <div className="text-dark py-2 px-6 md:py-4 md:px-8 border-2 border-dark font-medium rounded whitespace-nowrap opacity-50">
+            View all rentals
+          </div>
+        </div>
+        <div className="flex justify-center items-center h-40">
+          <p className="text-gray-500">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-10 md:py-20 px-4 md:px-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <h3 className="text-dark text-2xl md:text-3xl font-bold">
+            Shipping containers for sale
+          </h3>
+        </div>
+        <div className="flex justify-center items-center h-40">
+          <p className="text-red-500">
+            Please check your internet connection and reload the page
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-10 md:py-20 px-4 md:px-10">
@@ -74,6 +114,7 @@ export const PricedSaleSection = () => {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="text-dark py-2 px-6 md:py-4 md:px-8 border-2 border-dark font-medium rounded whitespace-nowrap hover:bg-dark hover:text-white transition-colors duration-200"
+          onClick={handleShopAllClick}
         >
           View all rentals
         </motion.button>
@@ -88,6 +129,7 @@ export const PricedSaleSection = () => {
               whileHover={{ backgroundColor: "#1a1a1a", color: "#fff" }}
               whileTap={{ scale: 0.95 }}
               className="text-dark font-medium hover:bg-dark hover:text-white border border-gray-300 px-3 py-1 md:px-4 md:py-2 rounded-lg text-sm md:text-base whitespace-nowrap transition-colors duration-200"
+              onClick={() => handleCategoryClick(button.category)}
             >
               {button.label}
             </motion.button>
@@ -95,33 +137,44 @@ export const PricedSaleSection = () => {
         </div>
       </div>
 
-      {/* Container Items */}
+      {/* Sale Items */}
       <div className="overflow-x-auto scrollbar-hide pb-4">
         <div className="flex space-x-4 md:space-x-6 w-max md:w-full py-4">
-          {containerItems.map((item, index) => (
+          {products.map((product) => (
             <motion.div
-              key={index}
+              key={product.id}
               whileHover={{ y: -5 }}
               className="cursor-pointer group min-w-[150px] md:min-w-[200px]"
-              onClick={() => navigate("/product")}
+              onClick={() => handleProductClick(product.id)}
             >
               <div className="bg-gray-200 p-4 md:p-6 rounded-lg h-[180px] flex items-center justify-center">
                 <img
-                  src={item.image}
-                  alt={item.alt}
+                  src={
+                    product.images && product.images.length > 0
+                      ? product.images[0]
+                      : container
+                  }
+                  alt={product.name}
                   className="w-full h-auto max-h-[120px] md:max-h-[140px] object-contain"
                 />
               </div>
               <p className="mt-3 font-bold text-base md:text-lg">
-                {item.price}
+                ${product.price.toLocaleString()}
               </p>
               <p className="text-dark mt-1 group-hover:text-blue-500 transition-colors duration-200 text-sm md:text-base">
-                {item.name}
+                {product.name}
               </p>
             </motion.div>
           ))}
         </div>
       </div>
+
+      {/* Show message if no products */}
+      {products.length === 0 && (
+        <div className="flex justify-center items-center h-40">
+          <p className="text-gray-500">No products available</p>
+        </div>
+      )}
     </div>
   );
 };
