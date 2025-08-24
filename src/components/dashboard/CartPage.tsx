@@ -126,7 +126,7 @@ const CartPage = () => {
 
       const productId = cart.items[index].productId;
 
-      const response = await api.delete(`/user/cart/remove/${productId}`, {
+      const response = await api.delete(`/user/cart/${productId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
