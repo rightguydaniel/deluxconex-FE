@@ -9,6 +9,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import AdminLayout from "./AdminLayout";
+import api from "../services/api";
 
 interface OrderItem {
   productId: string;
@@ -84,25 +85,46 @@ const AdminOrdersPage = () => {
   );
 
   // Handle order status update
-  const handleStatusChange = (orderId: string, newStatus: Order["status"]) => {
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
+  const handleStatusChange = async (
+    orderId: string,
+    newStatus: Order["status"]
+  ) => {
+    try {
+      const response = await api.patch(`/admin/order/${orderId}`, {
+        status: newStatus,
+      });
+      if (response.data.status === "success") {
+        setOrders(
+          orders.map((order) =>
+            order.id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+      }
+    } catch (error: any) {
+      console.log(error.message);
+    }
     // Here you would typically make an API call to update the order in the backend
   };
 
   // Handle payment status update
-  const handlePaymentStatusChange = (
+  const handlePaymentStatusChange = async (
     orderId: string,
     newStatus: Order["paymentStatus"]
   ) => {
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId ? { ...order, paymentStatus: newStatus } : order
-      )
-    );
+    const response = await api.patch(`/admin/order/${orderId}`, {
+      paymentStatus: newStatus,
+    });
+    if (response.data.status === "success") {
+      setOrders(
+        orders.map((order) =>
+          order.id === orderId ? { ...order, paymentStatus: newStatus } : order
+        )
+      );
+    }
+    try {
+    } catch (error: any) {
+      console.log(error.message);
+    }
     // Here you would typically make an API call to update the order in the backend
   };
 
@@ -178,50 +200,9 @@ const AdminOrdersPage = () => {
     const fetchOrders = async () => {
       setIsLoading(true);
       try {
-        // Replace with actual API call
-        // const response = await fetch('/api/orders');
-        // const data = await response.json();
-        // setOrders(data);
+        const response = await api.get("/admin/orders");
 
-        // Mock data
-        const mockOrders: Order[] = [
-          {
-            id: "ord-12345",
-            userId: "user-67890",
-            items: [
-              {
-                productId: "prod-001",
-                name: "20ft Shipping Container",
-                price: 2500,
-                quantity: 1,
-                dimension: "20ft",
-                deliveryMethod: "Local Delivery",
-                deliveryPrice: 250,
-                image: "container-image.jpg",
-              },
-            ],
-            subtotal: 2500,
-            shipping: 250,
-            tax: 275,
-            total: 3025,
-            status: "processing",
-            shippingAddress: {
-              street: "123 Main St",
-              city: "New York",
-              state: "NY",
-              postalCode: "10001",
-              country: "USA",
-            },
-            paymentMethod: "Credit Card",
-            paymentStatus: "paid",
-            trackingNumber: "TRK123456789",
-            createdAt: "2023-05-15T10:30:00Z",
-            updatedAt: "2023-05-15T10:30:00Z",
-          },
-          // Add more mock orders as needed
-        ];
-
-        setOrders(mockOrders);
+        setOrders(response.data.data);
       } catch (error) {
         console.error("Error fetching orders:", error);
       } finally {

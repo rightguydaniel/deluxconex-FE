@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FiPackage,
   FiChevronRight,
@@ -7,72 +7,53 @@ import {
   FiTruck,
   FiXCircle,
 } from "react-icons/fi";
-
+import api from "../../services/api";
+interface OrderItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  dimension?: string;
+  deliveryMethod: string;
+  deliveryPrice: number;
+  image: string;
+}
+interface ShippingAddress {
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+interface Orders {
+  id: string;
+  userId: string;
+  items: OrderItem[];
+  subtotal: number;
+  shipping: number;
+  tax: number;
+  total: number;
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  shippingAddress: ShippingAddress;
+  paymentMethod: string;
+  paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  trackingNumber?: string;
+  createdAt: string;
+}
 const Orders = () => {
-  const [orders] = useState([
-    {
-      id: "ord-001",
-      items: [
-        {
-          productId: "cont-20ft",
-          name: "20ft Shipping Container",
-          price: 2800,
-          quantity: 1,
-          image: "/container-20ft.jpg",
-          dimension: "20ft",
-          deliveryMethod: "Local Delivery",
-          deliveryPrice: 250,
-        },
-      ],
-      subtotal: 2800,
-      shipping: 250,
-      tax: 305,
-      total: 3355,
-      status: "processing",
-      shippingAddress: {
-        street: "123 Main St",
-        city: "New York",
-        state: "NY",
-        postalCode: "10001",
-        country: "USA",
-      },
-      paymentMethod: "Credit Card",
-      paymentStatus: "paid",
-      trackingNumber: "TRK123456789",
-      createdAt: "2023-05-15T10:30:00Z",
-    },
-    {
-      id: "ord-002",
-      items: [
-        {
-          productId: "cont-40ft",
-          name: "40ft Shipping Container",
-          price: 3800,
-          quantity: 1,
-          image: "/container-40ft.jpg",
-          dimension: "40ft",
-          deliveryMethod: "Pickup",
-          deliveryPrice: 0,
-        },
-      ],
-      subtotal: 3800,
-      shipping: 0,
-      tax: 380,
-      total: 4180,
-      status: "delivered",
-      shippingAddress: {
-        street: "456 Oak Ave",
-        city: "Los Angeles",
-        state: "CA",
-        postalCode: "90001",
-        country: "USA",
-      },
-      paymentMethod: "PayPal",
-      paymentStatus: "paid",
-      trackingNumber: "TRK987654321",
-      createdAt: "2023-04-20T14:15:00Z",
-    },
-  ]);
+  const [orders, setOrders] = useState<Orders[]>([]);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await api.get("/user/orders");
+        setOrders(response.data.data);
+      } catch (err: any) {
+        console.error("Failed to fetch orders:", err.message);
+      }
+    };
+    fetchOrders();
+  }, []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -146,7 +127,7 @@ const Orders = () => {
               </div>
 
               <div className="p-4">
-                {order.items.map((item, index) => (
+                {Array.isArray(order.items) && order.items.map((item, index) => (
                   <div key={index} className="flex mb-4 last:mb-0">
                     <div className="flex-shrink-0 h-16 w-16 rounded-md overflow-hidden">
                       <img

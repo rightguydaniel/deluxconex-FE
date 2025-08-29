@@ -130,60 +130,57 @@ const CartPage = () => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        data: { itemToRemove: cart.items[index] },
       });
-
-      if (response.data.success) {
-        setCart(response.data.data);
-      } else {
-        throw new Error("Failed to remove item");
-      }
+      setCart(response.data.data);
     } catch (err) {
       console.error("Error removing item:", err);
       alert("Failed to remove item. Please try again.");
     }
   };
 
-  // CartPage.tsx - Update the handleCheckout function
-  const handleCheckout = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/auth");
-        return;
-      }
-
-      const response = await api.post(
-        "/user/checkout",
-        { cart },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.status === "success") {
-        const { approvalUrl, orderId, invoiceId } = response.data.data;
-
-        // Store order info in localStorage for retrieval after payment
-        localStorage.setItem(
-          "currentOrder",
-          JSON.stringify({
-            orderId,
-            invoiceId,
-          })
-        );
-
-        // Redirect to PayPal
-        window.location.href = approvalUrl;
-      } else {
-        throw new Error(response.data.message || "Failed to create checkout");
-      }
-    } catch (err) {
-      console.error("Checkout error:", err);
-      alert("Failed to proceed to checkout. Please try again.");
+  // In your CartPage.tsx - update handleCheckout
+const handleCheckout = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/auth");
+      return;
     }
-  };
+
+    setLoading(true);
+    
+    const response = await api.post(
+      "/user/checkout",
+      { cart },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.data.status === "success") {
+      const { approvalUrl, orderId, invoiceId } = response.data.data;
+      
+      // Store order info in localStorage
+      localStorage.setItem("currentOrder", JSON.stringify({
+        orderId,
+        invoiceId
+      }));
+      
+      // Redirect to PayPal
+      window.location.href = approvalUrl;
+    } else {
+      throw new Error(response.data.message || "Failed to create checkout");
+    }
+  } catch (err) {
+    console.error("Checkout error:", err);
+    alert("Failed to proceed to checkout. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleContinueShopping = () => {
     navigate("/shop");

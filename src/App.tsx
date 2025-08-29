@@ -13,6 +13,8 @@ import AdminInvoicesPage from "./pages/AdminInvoicesPage";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminDashboard from "./pages/AdminDashboard";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
+import CheckoutCancel from "./pages/CheckoutCancel";
 
 function App() {
   return (
@@ -32,6 +34,8 @@ function App() {
         <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
         <Route path="/admin/users" element={<AdminUserManagement />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route path="/checkout/cancel" element={<CheckoutCancel />} />
       </Routes>
     </BrowserRouter>
   );

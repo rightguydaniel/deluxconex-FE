@@ -1,69 +1,78 @@
-import { useState } from 'react';
-import { FiFileText, FiDownload, FiMail,  FiCheckCircle, FiAlertCircle, FiXCircle } from 'react-icons/fi';
+import { useEffect, useState } from "react";
+import {
+  FiFileText,
+  FiDownload,
+  FiMail,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiXCircle,
+} from "react-icons/fi";
+import api from "../../services/api";
 
 const InvoicesPage = () => {
-  const [invoices] = useState([
-    {
-      id: 'inv-001',
-      orderId: 'ord-001',
-      invoiceNumber: 'INV-2023-001',
-      issueDate: '2023-05-01',
-      dueDate: '2023-05-15',
-      status: 'paid',
-      subtotal: 2500,
-      tax: 250,
-      shipping: 150,
-      discount: 100,
-      total: 2800,
-      notes: 'Thank you for your business!',
-      terms: 'Payment due within 14 days'
-    },
-    {
-      id: 'inv-002',
-      orderId: 'ord-002',
-      invoiceNumber: 'INV-2023-002',
-      issueDate: '2023-05-10',
-      dueDate: '2023-05-24',
-      status: 'sent',
-      subtotal: 3800,
-      tax: 380,
-      shipping: 200,
-      total: 4380,
-      notes: 'Please make payment by the due date',
-      terms: 'Payment due within 14 days'
-    }
-  ]);
+  interface Invoice {
+    id: string;
+    orderId: string;
+    userId: string;
+    invoiceNumber: string;
+    issueDate: Date;
+    dueDate: Date;
+    status: string;
+    subtotal: number;
+    tax: number;
+    shipping: number;
+    discount?: number;
+    total: number;
+    notes?: string;
+    terms?: string;
+  }
+
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  useEffect(() => {
+    // Fetch invoices from API
+    const fetchInvoices = async () => {
+      // Replace with actual API call
+      const response = await api.get("/user/invoices");
+      setInvoices(
+        response.data.data.map((invoice: any) => ({
+          ...invoice,
+          issueDate: new Date(invoice.issueDate),
+          dueDate: new Date(invoice.dueDate),
+        }))
+      );
+    };
+    fetchInvoices();
+  }, []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'draft':
+      case "draft":
         return <FiFileText className="text-gray-500" />;
-      case 'sent':
+      case "sent":
         return <FiMail className="text-blue-500" />;
-      case 'paid':
+      case "paid":
         return <FiCheckCircle className="text-green-500" />;
-      case 'overdue':
+      case "overdue":
         return <FiAlertCircle className="text-red-500" />;
-      case 'cancelled':
+      case "cancelled":
         return <FiXCircle className="text-gray-500" />;
       default:
         return <FiFileText className="text-gray-500" />;
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
@@ -96,13 +105,27 @@ const InvoicesPage = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issued</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Invoice #
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Order
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Issued
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Due
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
