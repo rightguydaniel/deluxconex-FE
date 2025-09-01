@@ -132,7 +132,7 @@ export const Footer = () => {
       {/* Footer Bottom */}
       <div className="flex flex-col items-center text-center text-xs sm:text-sm font-extralight py-4 space-y-2">
         <div className="flex flex-wrap justify-center gap-x-2">
-          <span>Headquartered in California</span>
+          <span>Headquartered in Miami</span>
           <span>|</span>
           <span>7am – 6pm Mon-Sat</span>
           <span>|</span>
@@ -140,8 +140,8 @@ export const Footer = () => {
             quote@deluxconex.com
           </a>
           <span>|</span>
-          <a href="tel:+18558785233" className="hover:text-blue-500">
-            (855) 878-5233
+          <a href="tel:+17869529946" className="hover:text-blue-500">
+            (786) 952-9946
           </a>
         </div>
         <div className="flex flex-wrap justify-center gap-x-2">

@@ -159,6 +159,10 @@ const handleCheckout = async () => {
         },
       }
     );
+    if(response.data.message==="address required"){
+      navigate("/dashboard/address");
+      return
+    }
 
     if (response.data.status === "success") {
       const { approvalUrl, orderId, invoiceId } = response.data.data;

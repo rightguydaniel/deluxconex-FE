@@ -100,10 +100,10 @@ export const Sidebar = () => {
             onClick={() => navigate("/")}
           />
           <a
-            href="tel:+18558785233"
+            href="tel:+17869529946"
             className="text-white text-lg lg:text-xl font-bold hover:text-blue-400 mt-2"
           >
-            (855) 878-5233
+          (786) 952-9946
           </a>
         </div>
 
