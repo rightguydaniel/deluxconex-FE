@@ -186,10 +186,7 @@ const AdminProductsPage = () => {
             <FiSearch className="text-gray-400" />
           </div>
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSearch(e as unknown as React.ChangeEvent<HTMLInputElement>);
-            }}
+            onSubmit={fetchProducts}
           >
             <input
               type="text"
