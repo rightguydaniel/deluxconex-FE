@@ -112,8 +112,8 @@ export const Shop = () => {
     try {
       setLoading(true);
       let url = category
-        ? `/products/category/${category}?page=${page}&limit=20`
-        : `/products/products?page=${page}&limit=20`;
+        ? `/products/category/${category}?page=${page}&limit=6`
+        : `/products/products?page=${page}&limit=6`;
 
       const response = await api.get(url);
 
