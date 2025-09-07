@@ -26,6 +26,14 @@ interface Product {
   categories?: string[];
 }
 
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalProducts: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 const ITEMS_PER_PAGE = 10;
 
 const AdminProductsPage = () => {
@@ -36,18 +44,33 @@ const AdminProductsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalProducts: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
 
-  // Fetch products on component mount
+  // Fetch products on component mount and when page or search term changes
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [currentPage, searchTerm]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/admin/products");
+      const response = await api.get("/admin/products", {
+        params: {
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+          search: searchTerm || undefined,
+        },
+      });
+
       if (response.data.success) {
         setProducts(response.data.data.products || []);
+        setPagination(response.data.data.pagination);
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -55,18 +78,6 @@ const AdminProductsPage = () => {
       setLoading(false);
     }
   };
-
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   const handleAddProduct = () => {
     setEditingProduct(null);
@@ -88,10 +99,8 @@ const AdminProductsPage = () => {
       const response = await api.delete(`/admin/products/${productId}`);
 
       if (response.data.success) {
-        setProducts(products.filter((p) => p.id !== productId));
-        if (paginatedProducts.length === 1 && currentPage > 1) {
-          setCurrentPage(currentPage - 1);
-        }
+        // Refetch products to ensure pagination is correct
+        fetchProducts();
       }
     } catch (error) {
       console.error("Error deleting product:", error);
@@ -119,29 +128,12 @@ const AdminProductsPage = () => {
         );
 
         if (response.data.success) {
-          setProducts(
-            products.map((p) =>
-              p.id === editingProduct.id ? response.data.data : p
-            )
-          );
+          // Refetch products to ensure data is up to date
+          fetchProducts();
           setIsFormOpen(false);
         }
       } else {
-        // Create new product
-        // const formData = new FormData();
-        // formData.append("productData", JSON.stringify(productData));
-
-        // const response = await api.post("/admin/products", formData, {
-        //   headers: {
-        //     "Content-Type": "multipart/form-data",
-        //   },
-        // });
-
-        // if (response.data) {
-        //   setProducts([...products, response.data]);
-        //   setIsFormOpen(false);
-        //   fetchProducts(); // Refresh the list to get the complete product data
-        // }
+        // For new products, just refetch
         fetchProducts();
         setIsFormOpen(false);
       }
@@ -149,6 +141,11 @@ const AdminProductsPage = () => {
       console.error("Error saving product:", error);
       alert("Failed to save product");
     }
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
   };
 
   if (loading) {
@@ -193,7 +190,7 @@ const AdminProductsPage = () => {
             placeholder="Search products..."
             className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearch}
           />
         </div>
 
@@ -220,7 +217,7 @@ const AdminProductsPage = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedProducts.map((product) => (
+                {products.map((product) => (
                   <motion.tr
                     key={product.id}
                     initial={{ opacity: 0 }}
@@ -280,7 +277,7 @@ const AdminProductsPage = () => {
             </table>
           </div>
 
-          {filteredProducts.length === 0 && (
+          {products.length === 0 && (
             <div className="p-6 text-center text-gray-500">
               {searchTerm
                 ? "No products found matching your search"
@@ -288,22 +285,20 @@ const AdminProductsPage = () => {
             </div>
           )}
 
-          {totalPages > 1 && (
+          {pagination.totalPages > 1 && (
             <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  disabled={!pagination.hasPrev}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
                 <button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages, currentPage + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={!pagination.hasNext}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
@@ -319,12 +314,12 @@ const AdminProductsPage = () => {
                     <span className="font-medium">
                       {Math.min(
                         currentPage * ITEMS_PER_PAGE,
-                        filteredProducts.length
+                        pagination.totalProducts
                       )}
                     </span>{" "}
                     of{" "}
                     <span className="font-medium">
-                      {filteredProducts.length}
+                      {pagination.totalProducts}
                     </span>{" "}
                     results
                   </p>
@@ -335,36 +330,33 @@ const AdminProductsPage = () => {
                     aria-label="Pagination"
                   >
                     <button
-                      onClick={() =>
-                        setCurrentPage(Math.max(1, currentPage - 1))
-                      }
-                      disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={!pagination.hasPrev}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span className="sr-only">Previous</span>
                       <FiChevronLeft className="h-5 w-5" />
                     </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                            currentPage === page
-                              ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-                              : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      )
-                    )}
+                    {Array.from(
+                      { length: pagination.totalPages },
+                      (_, i) => i + 1
+                    ).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          currentPage === page
+                            ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                            : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
                     <button
-                      onClick={() =>
-                        setCurrentPage(Math.min(totalPages, currentPage + 1))
-                      }
-                      disabled={currentPage === totalPages}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={!pagination.hasNext}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span className="sr-only">Next</span>
                       <FiChevronRight className="h-5 w-5" />
