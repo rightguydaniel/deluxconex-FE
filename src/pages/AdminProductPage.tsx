@@ -55,7 +55,7 @@ const AdminProductsPage = () => {
   // Fetch products on component mount and when page or search term changes
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, searchTerm]);
+  }, [currentPage]);
 
   const fetchProducts = async () => {
     try {
@@ -185,13 +185,20 @@ const AdminProductsPage = () => {
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <FiSearch className="text-gray-400" />
           </div>
-          <input
-            type="text"
-            placeholder="Search products..."
-            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={searchTerm}
-            onChange={handleSearch}
-          />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSearch(e as unknown as React.ChangeEvent<HTMLInputElement>);
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Search products..."
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={searchTerm}
+              // onChange={handleSearch}
+            />
+          </form>
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
