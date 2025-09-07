@@ -55,7 +55,7 @@ const AdminProductsPage = () => {
   // Fetch products on component mount and when page or search term changes
   useEffect(() => {
     fetchProducts();
-  }, [currentPage]);
+  }, [currentPage, searchTerm.length === 0]);
 
   const fetchProducts = async () => {
     try {
@@ -185,9 +185,7 @@ const AdminProductsPage = () => {
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <FiSearch className="text-gray-400" />
           </div>
-          <form
-            onSubmit={fetchProducts}
-          >
+          <form onSubmit={fetchProducts}>
             <input
               type="text"
               placeholder="Search products..."
