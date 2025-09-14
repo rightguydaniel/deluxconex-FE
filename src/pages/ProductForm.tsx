@@ -9,7 +9,6 @@ import {
 } from "react-icons/fi";
 import api from "../services/api";
 import { parseDbField } from "../services/parseDbFields";
-
 type ProductSpec = string | { title: string; value: string };
 
 interface Condition {
@@ -66,6 +65,10 @@ const CATEGORY_OPTIONS = [
 ];
 
 const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
+  // const [productImages, setProductImages] = useState<File[]>([]);
+  // const [conditionImages, setConditionImages] = useState<
+  //   { dimensionIndex: number; conditionIndex: number; files: File[] }[]
+  // >([]);
   const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
   const [conditionImageFiles, setConditionImageFiles] = useState<
     {
@@ -504,18 +507,14 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
       // Clean up the form data by removing blob URLs before sending
       const cleanFormData = {
         ...formData,
-        // For existing products, keep the image URLs
-        images: product
-          ? formData.images.filter((img) => !img.startsWith("blob:"))
-          : [],
+        // For existing products, keep the image URLs, for new ones remove blob URLs
+        images: formData.images.filter((img) => !img.startsWith("blob:")),
         dimensions: formData.dimensions.map((dimension) => ({
           ...dimension,
           conditions: dimension.conditions?.map((condition) => ({
             ...condition,
-            // For existing products, keep the image URLs
-            images: product
-              ? condition.images.filter((img) => !img.startsWith("blob:"))
-              : [],
+            // For existing products, keep the image URLs, for new ones remove blob URLs
+            images: condition.images.filter((img) => !img.startsWith("blob:")),
           })),
         })),
       };
@@ -541,7 +540,7 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
       );
 
       if (product && product.id) {
-        // Update existing product
+        // Update existing product - send both data and files
         const response = await api.put(
           `/admin/products/${product.id}`,
           formDataToSend,
@@ -552,8 +551,8 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
           }
         );
 
-        if (response.data.success) {
-          onSubmit(response.data.data);
+        if (response.data) {
+          onSubmit(response.data);
         }
       } else {
         // Create new product
@@ -563,8 +562,8 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
           },
         });
 
-        if (response.data.success) {
-          onSubmit(response.data.data);
+        if (response.data) {
+          onSubmit(response.data);
         }
       }
     } catch (error: any) {
@@ -574,7 +573,6 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
       setUploading(false);
     }
   };
-
   if (uploading) {
     return (
       <motion.div
@@ -596,7 +594,6 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
       </motion.div>
     );
   }
-
   return (
     <motion.div
       initial={{ opacity: 0 }}

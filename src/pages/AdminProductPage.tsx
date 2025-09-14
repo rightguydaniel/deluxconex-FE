@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Swal from "sweetalert2";
 import {
   FiSearch,
   FiPlus,
@@ -114,36 +115,18 @@ const AdminProductsPage = () => {
     }
   };
 
-  const handleSubmit = async (productData: Omit<Product, "id">) => {
+  const handleSubmit = async () => {
     try {
-      if (editingProduct) {
-        // Edit existing product
-        const formData = new FormData();
-        formData.append("productData", JSON.stringify(productData));
-
-        const response = await api.put(
-          `/admin/products/${editingProduct.id}`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-
-        if (response.data.success) {
-          // Refetch products to ensure data is up to date
-          fetchProducts();
-          setIsFormOpen(false);
-        }
-      } else {
-        // For new products, just refetch
-        fetchProducts();
-        setIsFormOpen(false);
-      }
+      // Refetch products to ensure data is up to date
+      fetchProducts();
+      setIsFormOpen(false);
     } catch (error) {
       console.error("Error saving product:", error);
-      alert("Failed to save product");
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to save product",
+      });
     }
   };
 
