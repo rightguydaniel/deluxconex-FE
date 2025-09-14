@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 import api from "../services/api";
 import { parseDbField } from "../services/parseDbFields";
+
 type ProductSpec = string | { title: string; value: string };
 
 interface Condition {
@@ -65,10 +66,6 @@ const CATEGORY_OPTIONS = [
 ];
 
 const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
-  // const [productImages, setProductImages] = useState<File[]>([]);
-  // const [conditionImages, setConditionImages] = useState<
-  //   { dimensionIndex: number; conditionIndex: number; files: File[] }[]
-  // >([]);
   const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
   const [conditionImageFiles, setConditionImageFiles] = useState<
     {
@@ -106,6 +103,7 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
 
   useEffect(() => {
     setEditing(formData.name.trim() !== "");
+    console.log(editing);
   }, []);
 
   const [activeTab, setActiveTab] = useState("basic");
@@ -500,40 +498,73 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
     setUploading(true);
 
     try {
-      if (editing) {
-        onSubmit(formData);
-      } else {
-        const formDataToSend = new FormData();
+      // Prepare form data for submission
+      const formDataToSend = new FormData();
 
-        // Add product data as JSON
-        formDataToSend.append("productData", JSON.stringify(formData));
+      // Clean up the form data by removing blob URLs before sending
+      const cleanFormData = {
+        ...formData,
+        // For existing products, keep the image URLs
+        images: product
+          ? formData.images.filter((img) => !img.startsWith("blob:"))
+          : [],
+        dimensions: formData.dimensions.map((dimension) => ({
+          ...dimension,
+          conditions: dimension.conditions?.map((condition) => ({
+            ...condition,
+            // For existing products, keep the image URLs
+            images: product
+              ? condition.images.filter((img) => !img.startsWith("blob:"))
+              : [],
+          })),
+        })),
+      };
 
-        // Add product image files
-        productImageFiles.forEach((file) => {
-          formDataToSend.append("productImages", file);
-        });
+      // Add product data as JSON
+      formDataToSend.append("productData", JSON.stringify(cleanFormData));
 
-        // Add condition image files
-        conditionImageFiles.forEach(
-          ({ dimensionIndex, conditionIndex, files }) => {
-            files.forEach((file) => {
-              formDataToSend.append(
-                `conditionImages_${dimensionIndex}_${conditionIndex}`,
-                file
-              );
-            });
+      // Add product image files
+      productImageFiles.forEach((file) => {
+        formDataToSend.append("productImages", file);
+      });
+
+      // Add condition image files
+      conditionImageFiles.forEach(
+        ({ dimensionIndex, conditionIndex, files }) => {
+          files.forEach((file) => {
+            formDataToSend.append(
+              `conditionImages_${dimensionIndex}_${conditionIndex}`,
+              file
+            );
+          });
+        }
+      );
+
+      if (product && product.id) {
+        // Update existing product
+        const response = await api.put(
+          `/admin/products/${product.id}`,
+          formDataToSend,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
           }
         );
 
-        // Send to backend
+        if (response.data.success) {
+          onSubmit(response.data.data);
+        }
+      } else {
+        // Create new product
         const response = await api.post("/admin/products", formDataToSend, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         });
 
-        if (response.data) {
-          onSubmit(response.data);
+        if (response.data.success) {
+          onSubmit(response.data.data);
         }
       }
     } catch (error: any) {
@@ -543,6 +574,7 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
       setUploading(false);
     }
   };
+
   if (uploading) {
     return (
       <motion.div
@@ -564,6 +596,7 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
       </motion.div>
     );
   }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}

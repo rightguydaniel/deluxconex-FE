@@ -52,10 +52,15 @@ const AdminProductsPage = () => {
     hasPrev: false,
   });
 
-  // Fetch products on component mount and when page or search term changes
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, searchTerm.length === 0]);
+    if (searchTerm.length === 0) {
+      const delayDebounceFn = setTimeout(() => {
+        fetchProducts();
+      }, 300);
+      return () => clearTimeout(delayDebounceFn);
+    }
+  }, [currentPage]);
 
   const fetchProducts = async () => {
     try {
@@ -99,7 +104,6 @@ const AdminProductsPage = () => {
       const response = await api.delete(`/admin/products/${productId}`);
 
       if (response.data.success) {
-        // Refetch products to ensure pagination is correct
         fetchProducts();
       }
     } catch (error) {
