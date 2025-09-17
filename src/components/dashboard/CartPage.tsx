@@ -151,7 +151,7 @@ const handleCheckout = async () => {
     setLoading(true);
     
     const response = await api.post(
-      "/user/checkout",
+      "/user/checkout/stripe/session",
       { cart },
       {
         headers: {
@@ -165,16 +165,17 @@ const handleCheckout = async () => {
     }
 
     if (response.data.status === "success") {
-      const { approvalUrl, orderId, invoiceId } = response.data.data;
+      const { orderId, invoiceId, url, sessionId } = response.data.data;
       
       // Store order info in localStorage
       localStorage.setItem("currentOrder", JSON.stringify({
         orderId,
-        invoiceId
+        invoiceId,
+        sessionId
       }));
       
       // Redirect to PayPal
-      window.location.href = approvalUrl;
+      window.location.href = url;
     } else {
       throw new Error(response.data.message || "Failed to create checkout");
     }
