@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { RiCustomerService2Line } from "react-icons/ri";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
+import Swal from "sweetalert2";
 
 interface ProductSpec {
   title?: string;
@@ -296,6 +297,15 @@ export const Product = () => {
     // Check if user is authenticated
     const token = localStorage.getItem("token");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!selectedDelivery) {
+      Swal.fire({
+        title: "Delivery Method Required",
+        text: "Please select a delivery method.",
+        icon: "warning",
+        showCancelButton: true,
+      });
+      return;
+    }
     const userId =
       typeof user === "object" && user !== null ? user.id : undefined;
 
@@ -355,20 +365,25 @@ export const Product = () => {
 
       if (data.status === "success") {
         // Show success popup with options
-        const shouldCheckout = window.confirm(
-          `Added to cart successfully!\n\n` +
-            `Item: ${quantity} x ${product.name}\n` +
-            `Price per unit: $${basePrice.toLocaleString()}\n` +
-            `${selectedDimension ? `Dimension: ${selectedDimension}\n` : ""}` +
-            `${selectedCondition ? `Condition: ${selectedCondition}\n` : ""}` +
-            `${
-              selectedDelivery
-                ? `Delivery: ${selectedDelivery} ($${deliveryPrice})\n`
-                : ""
-            }` +
-            `Total: $${totalPrice.toLocaleString()}\n\n` +
-            `Click OK to proceed to checkout, or Cancel to continue shopping.`
-        );
+        const result = await Swal.fire({
+          title: "Added to cart successfully!",
+          html: `
+            <p><strong>Item:</strong> ${quantity} x ${product.name}</p>
+            <p><strong>Price per unit:</strong> $${basePrice.toLocaleString()}</p>
+            ${selectedDimension ? `<p><strong>Dimension:</strong> ${selectedDimension}</p>` : ""}
+            ${selectedCondition ? `<p><strong>Condition:</strong> ${selectedCondition}</p>` : ""}
+            ${selectedDelivery ? `<p><strong>Delivery:</strong> ${selectedDelivery} ($${deliveryPrice})</p>` : ""}
+            <p><strong>Total:</strong> $${totalPrice.toLocaleString()}</p>
+            <p>Click "Proceed to Checkout" to continue, or "Keep Shopping" to stay on this page.</p>
+          `,
+          icon: "success",
+          showCancelButton: true,
+          confirmButtonText: "Proceed to Checkout",
+          cancelButtonText: "Keep Shopping",
+        });
+
+        const shouldCheckout = result.isConfirmed;
+
 
         if (shouldCheckout) {
           navigate("/dashboard/cart");
