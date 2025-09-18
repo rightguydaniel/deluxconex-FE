@@ -94,7 +94,6 @@ export const Shop = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [cart, setCart] = useState<{ id: string; quantity: number }[]>([]);
-  console.log(cart)
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +105,7 @@ export const Shop = () => {
     hasNext: false,
     hasPrev: false,
   });
+  console.log(cart)
 
   // Fetch products based on category and page
   const fetchProducts = async (page: number = 1) => {
@@ -122,7 +122,6 @@ export const Shop = () => {
       }
 
       const data = response.data;
-      console.log(data);
 
       if (data.success) {
         setProducts(data.data.products || []);

@@ -101,7 +101,6 @@ export const Product = () => {
         const response = await api.get(`/products/${id}`);
 
         const data = response.data.data;
-        console.log(data);
 
         // Parse specifications if they're stored as JSON strings
         const parsedData = {
@@ -370,9 +369,21 @@ export const Product = () => {
           html: `
             <p><strong>Item:</strong> ${quantity} x ${product.name}</p>
             <p><strong>Price per unit:</strong> $${basePrice.toLocaleString()}</p>
-            ${selectedDimension ? `<p><strong>Dimension:</strong> ${selectedDimension}</p>` : ""}
-            ${selectedCondition ? `<p><strong>Condition:</strong> ${selectedCondition}</p>` : ""}
-            ${selectedDelivery ? `<p><strong>Delivery:</strong> ${selectedDelivery} ($${deliveryPrice})</p>` : ""}
+            ${
+              selectedDimension
+                ? `<p><strong>Dimension:</strong> ${selectedDimension}</p>`
+                : ""
+            }
+            ${
+              selectedCondition
+                ? `<p><strong>Condition:</strong> ${selectedCondition}</p>`
+                : ""
+            }
+            ${
+              selectedDelivery
+                ? `<p><strong>Delivery:</strong> ${selectedDelivery} ($${deliveryPrice})</p>`
+                : ""
+            }
             <p><strong>Total:</strong> $${totalPrice.toLocaleString()}</p>
             <p>Click "Proceed to Checkout" to continue, or "Keep Shopping" to stay on this page.</p>
           `,
@@ -384,16 +395,35 @@ export const Product = () => {
 
         const shouldCheckout = result.isConfirmed;
 
-
         if (shouldCheckout) {
           navigate("/dashboard/cart");
         }
       } else {
         throw new Error(data.message || "Failed to add item to cart");
       }
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      alert("Failed to add item to cart. Please try again.");
+    } catch (error: any) {
+      if (error.response.status === 401) {
+        Swal.fire({
+          title: "Login Required",
+          text: "You need to log in to add items to your cart.",
+          icon: "info",
+          confirmButtonText: "Login",
+          confirmButtonColor: "#071623",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate("/auth");
+          }
+        });
+      } else {
+        Swal.fire({
+          title: "Error",
+          text:
+            error instanceof Error
+              ? error.message
+              : "An error occurred while adding to cart.",
+          icon: "error",
+        });
+      }
     }
   };
 
