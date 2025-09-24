@@ -1,7 +1,7 @@
 // Sidebar.tsx
 import { motion } from "framer-motion";
 import logo from "../assets/images/Deluxconex.png";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FaHandshake,
   FaHammer,
@@ -27,26 +27,26 @@ const CategoryItem = ({
   Icon: React.ElementType;
   categoryName: string;
 }) => {
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    const encodedCategory = encodeURIComponent(categoryName);
-    navigate(`/shop/${encodedCategory}`);
-  };
-
   return (
     <motion.li
       whileHover={{ scale: 1.02, backgroundColor: "#0b2f45" }}
       whileTap={{ scale: 0.98 }}
       className="flex items-center py-2 pl-5 cursor-pointer rounded-lg group"
-      onClick={handleClick}
     >
-      <span className="mr-3">
-        <Icon size="15" className="text-[#475367] group-hover:text-[#e7d8c2]" />
-      </span>
-      <span className="font-medium text-sm text-gray-400 leading-[145%] group-hover:text-white">
-        {name}
-      </span>
+      <Link
+        to={`/shop/${encodeURIComponent(categoryName)}`}
+        className="flex items-center w-full"
+      >
+        <span className="mr-3">
+          <Icon
+            size="15"
+            className="text-[#475367] group-hover:text-[#e7d8c2]"
+          />
+        </span>
+        <span className="font-medium text-sm text-gray-400 leading-[145%] group-hover:text-white">
+          {name}
+        </span>
+      </Link>
     </motion.li>
   );
 };
@@ -62,27 +62,28 @@ const Item = ({
   path: string;
 }) => {
   const navigate = useNavigate();
-
   return (
     <motion.li
       whileHover={{ scale: 1.02, backgroundColor: "#0b2f45" }}
       whileTap={{ scale: 0.98 }}
       className="flex items-center py-2 pl-5 cursor-pointer rounded-lg group"
-      onClick={() => navigate(path)}
     >
-      <span className="mr-3">
-        <Icon size="15" className="text-[#475367] group-hover:text-[#e7d8c2]" />
-      </span>
-      <span className="font-medium text-sm text-gray-400 leading-[145%] group-hover:text-white">
-        {name}
-      </span>
+      <div className="flex items-center w-full" onClick={() => navigate(path)}>
+        <span className="mr-3">
+          <Icon
+            size="15"
+            className="text-[#475367] group-hover:text-[#e7d8c2]"
+          />
+        </span>
+        <span className="font-medium text-sm text-gray-400 leading-[145%] group-hover:text-white">
+          {name}
+        </span>
+      </div>
     </motion.li>
   );
 };
 
 export const Sidebar = () => {
-  const navigate = useNavigate();
-
   return (
     <motion.div
       initial={{ x: -20, opacity: 0 }}
@@ -93,17 +94,18 @@ export const Sidebar = () => {
       <div>
         {/* Logo and Phone */}
         <div className="relative flex flex-col justify-center px-5 mb-6">
-          <img
-            src={logo}
-            alt="Deluxconex-logo"
-            className="cursor-pointer w-40 lg:w-32"
-            onClick={() => navigate("/")}
-          />
+          <Link to="/" className="inline-flex">
+            <img
+              src={logo}
+              alt="Deluxconex-logo"
+              className="cursor-pointer w-40 lg:w-32"
+            />
+          </Link>
           <a
             href="tel:+17869529946"
             className="text-white text-lg lg:text-xl font-bold hover:text-blue-400 mt-2"
           >
-          (786) 952-9946
+            (786) 952-9946
           </a>
         </div>
 
@@ -130,7 +132,7 @@ export const Sidebar = () => {
           <Item name="Gallery" Icon={GrGallery} path="/gallery" />
           <Item name="Delivery" Icon={FaTruck} path="/delivery" />
           <Item name="Inventory" Icon={FaMapLocationDot} path="/inventory" />
-          <Item name="Contact us" Icon={FaEnvelopeOpen} path="/contact" />
+          <Item name="Contact us" Icon={FaEnvelopeOpen} path="/inventory" />
           <Item name="Cart" Icon={FaShoppingCart} path="/auth" />
           <Item name="My account" Icon={FiLogIn} path="/auth" />
           <Item name="Search" Icon={IoSearch} path="/shop" />

@@ -9,6 +9,12 @@ import { RiCustomerService2Line } from "react-icons/ri";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
 import Swal from "sweetalert2";
+import { Helmet } from "react-helmet-async";
+import {
+  buildCanonicalUrl,
+  seoConfig,
+  serializeJsonLd,
+} from "../config/seo";
 
 interface ProductSpec {
   title?: string;
@@ -93,6 +99,88 @@ export const Product = () => {
   const [error, setError] = useState<string | null>(null);
   const contactRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const canonicalPath = product
+    ? `/product/${product.id}`
+    : id
+    ? `/product/${id}`
+    : "/product";
+  const rawDescription = product?.description
+    ? product.description.replace(/\s+/g, " ").trim()
+    : "Explore detailed specifications, pricing, and delivery options for shipping containers available through DeluxConex.";
+  const pageDescription = rawDescription.length > 155
+    ? `${rawDescription.slice(0, 152)}...`
+    : rawDescription;
+  const pageTitle = product
+    ? `${product.name} | ${seoConfig.siteName}`
+    : `Shipping Container | ${seoConfig.siteName}`;
+  const leadImage = product?.images?.[0];
+
+  const productJsonLd = product
+    ? {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: product.name,
+        sku: product.sku,
+        description: rawDescription,
+        image: product.images,
+        brand: {
+          "@type": "Brand",
+          name: seoConfig.siteName,
+        },
+        offers: [
+          {
+            "@type": "Offer",
+            price: product.price,
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+            url: buildCanonicalUrl(canonicalPath),
+          },
+          ...product.dimensions
+            .filter((dim) => typeof dim.price === "number")
+            .map((dim) => ({
+              "@type": "Offer",
+              price: dim.price,
+              priceCurrency: "USD",
+              availability: "https://schema.org/InStock",
+              itemOffered: {
+                "@type": "Product",
+                name: `${product.name} - ${dim.dimension}`,
+              },
+              url: buildCanonicalUrl(canonicalPath),
+            })),
+        ],
+      }
+    : null;
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: buildCanonicalUrl("/"),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Shop",
+        item: buildCanonicalUrl("/shop"),
+      },
+      ...(product
+        ? [
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: product.name,
+              item: buildCanonicalUrl(canonicalPath),
+            },
+          ]
+        : []),
+    ],
+  };
   // Fetch product data
   useEffect(() => {
     const fetchProduct = async () => {
@@ -488,6 +576,37 @@ export const Product = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-100 relative">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={buildCanonicalUrl(canonicalPath)} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:type" content="product" />
+        <meta property="og:url" content={buildCanonicalUrl(canonicalPath)} />
+        {leadImage && <meta property="og:image" content={leadImage} />}
+        <meta property="og:site_name" content={seoConfig.siteName} />
+        <meta name="twitter:card" content="summary_large_image" />
+        {seoConfig.twitterHandle && (
+          <meta name="twitter:site" content={seoConfig.twitterHandle} />
+        )}
+        {leadImage && <meta name="twitter:image" content={leadImage} />}
+        {product && (
+          <>
+            <meta name="product:price:amount" content={product.price.toString()} />
+            <meta name="product:price:currency" content="USD" />
+            <meta name="product:availability" content="in stock" />
+          </>
+        )}
+        <script type="application/ld+json">
+          {serializeJsonLd(breadcrumbJsonLd)}
+        </script>
+        {productJsonLd && (
+          <script type="application/ld+json">
+            {serializeJsonLd(productJsonLd)}
+          </script>
+        )}
+      </Helmet>
       {/* Sidebar */}
       {showSidebar && (
         <div

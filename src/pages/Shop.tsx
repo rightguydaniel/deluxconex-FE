@@ -11,6 +11,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiFilter, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
+import { Helmet } from "react-helmet-async";
+import {
+  buildCanonicalUrl,
+  seoConfig,
+  serializeJsonLd,
+} from "../config/seo";
 
 // Product Interface
 interface Product {
@@ -44,7 +50,7 @@ const SaleItem = ({ product, onAddToCart }: SaleItemProps) => {
   const navigate = useNavigate();
 
   return (
-    <motion.div
+    <motion.article
       whileHover={{ y: -5 }}
       className="flex bg-white p-3 cursor-pointer rounded-lg mb-3 shadow-sm hover:shadow-md transition-shadow"
       onClick={() => navigate(`/product/${product.id}`)}
@@ -58,6 +64,8 @@ const SaleItem = ({ product, onAddToCart }: SaleItemProps) => {
           }
           alt={product.name}
           className="w-full h-28 object-contain bg-gray-50 rounded-lg"
+          loading="lazy"
+          decoding="async"
         />
       </div>
       <div className="w-2/3 pl-3 flex flex-col justify-between">
@@ -84,7 +92,7 @@ const SaleItem = ({ product, onAddToCart }: SaleItemProps) => {
           Add to cart
         </motion.button>
       </div>
-    </motion.div>
+    </motion.article>
   );
 };
 
@@ -106,6 +114,72 @@ export const Shop = () => {
     hasPrev: false,
   });
   console.log(cart)
+
+  const decodedCategory = category ? decodeURIComponent(category) : undefined;
+  const formattedCategory = decodedCategory
+    ? decodedCategory
+        .split(/\s+/)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ")
+    : undefined;
+  const pageTitle = formattedCategory
+    ? `${formattedCategory} Shipping Containers | ${seoConfig.siteName}`
+    : `Shop Shipping Containers | ${seoConfig.siteName}`;
+  const pageDescription = formattedCategory
+    ? `Browse ${formattedCategory.toLowerCase()} shipping containers available for sale or rent. Compare dimensions, pricing, and delivery options nationwide.`
+    : `Shop new, used, and custom shipping containers for sale or rent. Filter by size, condition, and delivery to find the right fit for your project.`;
+  const canonicalPath = category ? `/shop/${category}` : "/shop";
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: buildCanonicalUrl("/"),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Shop",
+        item: buildCanonicalUrl("/shop"),
+      },
+      ...(formattedCategory
+        ? [
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: formattedCategory,
+              item: buildCanonicalUrl(canonicalPath),
+            },
+          ]
+        : []),
+    ],
+  };
+
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: formattedCategory ? `${formattedCategory} Containers` : "Shipping Containers",
+    itemListOrder: "https://schema.org/ItemListOrderAscending",
+    itemListElement: products.map((product, index) => ({
+      "@type": "Product",
+      position: index + 1,
+      name: product.name,
+      sku: product.sku,
+      offers: {
+        "@type": "Offer",
+        price: product.price,
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+        url: buildCanonicalUrl(`/product/${product.id}`),
+      },
+      image: product.images?.[0],
+      url: buildCanonicalUrl(`/product/${product.id}`),
+    })),
+  };
 
   // Fetch products based on category and page
   const fetchProducts = async (page: number = 1) => {
@@ -200,6 +274,28 @@ export const Shop = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-100 relative">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={buildCanonicalUrl(canonicalPath)} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={buildCanonicalUrl(canonicalPath)} />
+        <meta property="og:site_name" content={seoConfig.siteName} />
+        <meta name="twitter:card" content="summary_large_image" />
+        {seoConfig.twitterHandle && (
+          <meta name="twitter:site" content={seoConfig.twitterHandle} />
+        )}
+        <script type="application/ld+json">
+          {serializeJsonLd(breadcrumbJsonLd)}
+        </script>
+        {products.length > 0 && (
+          <script type="application/ld+json">
+            {serializeJsonLd(itemListJsonLd)}
+          </script>
+        )}
+      </Helmet>
       {/* Sidebar - Only shown when toggled */}
       {showSidebar && (
         <div

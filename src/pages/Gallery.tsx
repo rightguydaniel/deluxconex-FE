@@ -4,6 +4,8 @@ import { Footer } from "../components/Homepage/Footer";
 import { useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
+import { Helmet } from "react-helmet-async";
+import { buildCanonicalUrl, seoConfig } from "../config/seo";
 
 export const Gallery = () => {
   const isLargeScreen = useMediaQuery({ minWidth: 1024 });
@@ -13,6 +15,23 @@ export const Gallery = () => {
   };
   return (
     <div className="flex min-h-screen bg-gray-100">
+      <Helmet>
+        <title>Container Gallery & Case Studies | {seoConfig.siteName}</title>
+        <meta
+          name="description"
+          content="See completed container projects, mobile offices, cold storage units, and custom fabrications delivered nationwide by DeluxConex."
+        />
+        <link rel="canonical" href={buildCanonicalUrl("/gallery")} />
+        <meta property="og:title" content="Container Gallery & Case Studies" />
+        <meta
+          property="og:description"
+          content="Browse real-world container projects across rentals, sales, and custom modifications."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={buildCanonicalUrl("/gallery")} />
+        <meta property="og:site_name" content={seoConfig.siteName} />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
       {/* Sidebar - Hidden on mobile by default, shown on large screens */}
       {showSidebar && (
         <div

@@ -167,14 +167,14 @@ export const Hero = () => {
 
         {/* Content */}
         <div className="relative z-10 h-full flex flex-col justify-center px-4 md:px-8 lg:px-12">
-          <motion.h3
+          <motion.h1
             className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-center font-bold mb-6 md:mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             Shipping Container Sales, Rentals & Mods
-          </motion.h3>
+          </motion.h1>
 
           <motion.div
             className="flex justify-center"

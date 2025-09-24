@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/images/Deluxconex.png";
 import { MdOutlineShoppingCart, MdMenu, MdCall } from "react-icons/md";
 import { motion } from "framer-motion";
@@ -12,21 +12,25 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const navigate = useNavigate();
   const isDesktop = useMediaQuery({ minWidth: 1024 });
 
-  const handleCategoryClick = (categoryName: string) => {
-    const encodedCategory = encodeURIComponent(categoryName);
-    navigate(`/shop/${encodedCategory}`);
-  };
-
   const navItems = [
-    { name: "Buy", action: () => navigate("/shop") },
-    { name: "Rent", action: () => handleCategoryClick("rent") },
-    { name: "Cold storage", action: () => handleCategoryClick("cold storage") },
-    { name: "Parts", action: () => handleCategoryClick("parts") },
-    { name: "Customizations", action: () => handleCategoryClick("parts") },
-    { name: "Chasis & trailers", action: () => handleCategoryClick("parts") },
-    { name: "Gallery", action: () => navigate("/gallery") },
-    { name: "Delivery", action: () => navigate("/delivery") },
-    { name: "Inventory", action: () => navigate("/inventory") },
+    { name: "Buy", to: "/shop" },
+    { name: "Rent", to: `/shop/${encodeURIComponent("rent")}` },
+    {
+      name: "Cold storage",
+      to: `/shop/${encodeURIComponent("cold storage")}`,
+    },
+    { name: "Parts", to: `/shop/${encodeURIComponent("parts")}` },
+    {
+      name: "Customizations",
+      to: `/shop/${encodeURIComponent("parts")}`,
+    },
+    {
+      name: "Chasis & trailers",
+      to: `/shop/${encodeURIComponent("parts")}`,
+    },
+    { name: "Gallery", to: "/gallery" },
+    { name: "Delivery", to: "/delivery" },
+    { name: "Inventory", to: "/inventory" },
   ];
 
   // Desktop Header
@@ -45,20 +49,21 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
               key={index}
               whileHover={{ backgroundColor: "#4B5563" }}
               whileTap={{ scale: 0.95 }}
-              onClick={item.action}
               className="hover:cursor-pointer py-1 px-3 rounded"
             >
-              {item.name}
+              <Link to={item.to} className="block">
+                {item.name}
+              </Link>
             </motion.li>
           ))}
         </ul>
         <div className="flex space-x-10">
           <motion.a
-            href="tel:+87437484343"
+            href="tel:+17869529946"
             whileHover={{ scale: 1.05 }}
             className="text-light font-bold hover:underline"
           >
-            (874) 37484343
+            (786) 952-9946
           </motion.a>
           <motion.div
             whileHover={{
@@ -67,7 +72,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             }}
             whileTap={{ scale: 0.9 }}
             className="border border-white rounded p-2 cursor-pointer"
-            onClick={() => navigate("/cart")}
+            onClick={() => navigate("/dashboard/cart")}
           >
             <MdOutlineShoppingCart className="h-6 w-6" />
           </motion.div>

@@ -4,6 +4,8 @@ import { Footer } from "../components/Homepage/Footer";
 import { useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
+import { Helmet } from "react-helmet-async";
+import { buildCanonicalUrl, seoConfig } from "../config/seo";
 
 export const Delivery = () => {
   const isLargeScreen = useMediaQuery({ minWidth: 1024 });
@@ -13,6 +15,23 @@ export const Delivery = () => {
   };
   return (
     <div className="flex min-h-screen bg-gray-100">
+      <Helmet>
+        <title>Nationwide Container Delivery & Logistics | {seoConfig.siteName}</title>
+        <meta
+          name="description"
+          content="Plan reliable shipping container delivery with DeluxConex. Get crane, tilt-bed, and flatbed logistics support across the continental United States."
+        />
+        <link rel="canonical" href={buildCanonicalUrl("/delivery")} />
+        <meta property="og:title" content="Nationwide Container Delivery & Logistics" />
+        <meta
+          property="og:description"
+          content="Schedule shipping container transport, crane services, and site preparation with DeluxConex logistics experts."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={buildCanonicalUrl("/delivery")} />
+        <meta property="og:site_name" content={seoConfig.siteName} />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
       {/* Sidebar - Hidden on mobile by default, shown on large screens */}
       {showSidebar && (
         <div
