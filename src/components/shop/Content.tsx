@@ -7,7 +7,7 @@ export const Content = () => {
     <>
       <h4 className="text-dark text-lg font-bold mb-2">Have questions?</h4>
       <p className="text-dark mb-2">
-        Call our specialists at <a href="tel:+4627848723">(855)878-5233.</a> We
+        Call our specialists at <a href="tel:+17869529946">(786) 952-9946</a> We
         are open Mon-Fri 7am-6pm PST.
       </p>
       <button className="my-2 border border-dark w-full py-2 font-bold rounded hover:bg-dark hover:text-white">
