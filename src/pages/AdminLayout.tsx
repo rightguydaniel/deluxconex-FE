@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiMenu, FiX, FiHome, FiBox, FiUsers, FiCreditCard, FiFileText, FiDollarSign } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiBox, FiUsers, FiFileText, FiDollarSign } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 
 interface SidebarItem {
@@ -23,7 +23,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { name: 'Users', icon: <FiUsers />, path: '/admin/users' },
     { name: 'Orders', icon: <FiFileText />, path: '/admin/orders' },
     { name: 'Invoices', icon: <FiDollarSign />, path: '/admin/invoices' },
-    { name: 'Payment Methods', icon: <FiCreditCard />, path: '/admin/payment-methods' },
+    // { name: 'Payment Methods', icon: <FiCreditCard />, path: '/admin/payment-methods' },
   ];
 
   return (

@@ -45,10 +45,10 @@ interface FilterProps {
   initialFilters?: Record<string, string>;
 }
 
-export const Filter = ({ onFilter, initialFilters = {} }: FilterProps) => {
+export const Filter = ({  initialFilters = {} }: FilterProps) => {
   const [filters, setFilters] =
     useState<Record<string, string>>(initialFilters);
-  const [zipCode, setZipCode] = useState("");
+  // const [zipCode, setZipCode] = useState("");
 
   const filterSections = [
     {
@@ -107,13 +107,13 @@ export const Filter = ({ onFilter, initialFilters = {} }: FilterProps) => {
     setFilters(newFilters);
   };
 
-  const handleApplyFilters = () => {
-    onFilter?.({ ...filters, zipCode });
-  };
+  // const handleApplyFilters = () => {
+  //   onFilter?.({ ...filters, zipCode });
+  // };
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-sm">
-      <div className="mb-4">
+      {/* <div className="mb-4">
         <input
           type="text"
           placeholder="Your ZIP"
@@ -129,7 +129,7 @@ export const Filter = ({ onFilter, initialFilters = {} }: FilterProps) => {
         >
           See prices
         </motion.button>
-      </div>
+      </div> */}
 
       <h4 className="text-lg font-bold mb-2">Filters</h4>
 
