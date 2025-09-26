@@ -8,15 +8,13 @@ import { PricedSaleSection } from "../components/Homepage/PricedSaleSection";
 import { SaleSection } from "../components/Homepage/SaleSection";
 import { ServiceArea } from "../components/Homepage/ServiceArea";
 import { Header } from "../components/Header";
+import api from "../services/api";
+import { useEffect } from "react";
 import { useState } from "react";
 import { useMediaQuery } from "react-responsive";
 import { Sidebar } from "../components/Sidebar";
 import { Helmet } from "react-helmet-async";
-import {
-  buildCanonicalUrl,
-  seoConfig,
-  serializeJsonLd,
-} from "../config/seo";
+import { buildCanonicalUrl, seoConfig, serializeJsonLd } from "../config/seo";
 
 export const Homepage = () => {
   const isLargeScreen = useMediaQuery({ minWidth: 1024 });
@@ -44,13 +42,18 @@ export const Homepage = () => {
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Helmet>
-        <title>Shipping Container Sales, Rentals & Mods | {seoConfig.siteName}</title>
+        <title>
+          Shipping Container Sales, Rentals & Mods | {seoConfig.siteName}
+        </title>
         <meta
           name="description"
           content="Explore new, used, and custom shipping containers for sale or rent. DeluxConex delivers turnkey container solutions, cold storage, and nationwide logistics."
         />
         <link rel="canonical" href={buildCanonicalUrl("/")} />
-        <meta property="og:title" content="Shipping Container Sales, Rentals & Mods" />
+        <meta
+          property="og:title"
+          content="Shipping Container Sales, Rentals & Mods"
+        />
         <meta
           property="og:description"
           content="Nationwide shipping container sales, rentals, and modifications. Request a quote today to customize cold storage, mobile offices, and more."
@@ -106,4 +109,20 @@ export const Homepage = () => {
       </div>
     </div>
   );
+};
+
+// Record a visit when the homepage component mounts (SPA navigation)
+export const HomepageWithVisit = () => {
+  useEffect(() => {
+    try {
+      api.post("/visits", { path: "/" }).catch((err) => {
+        // non-fatal
+        console.debug("Unable to send visit", err?.message || err);
+      });
+    } catch (err) {
+      // ignore
+    }
+  }, []);
+
+  return <Homepage />;
 };

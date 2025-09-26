@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Homepage } from "./pages/Homepage";
+import { HomepageWithVisit } from "./pages/Homepage";
 import { Auth } from "./pages/auth";
 import { Dashboard } from "./pages/Dashboard";
 import { Shop } from "./pages/Shop";
@@ -20,7 +20,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" index element={<Homepage />} />
+        <Route path="/" index element={<HomepageWithVisit />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/dashboard/:tab?" element={<Dashboard />} />
         <Route path="/shop/:category?" element={<Shop />} />
