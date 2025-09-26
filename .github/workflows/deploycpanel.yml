@@ -31,9 +31,6 @@ jobs:
             echo "Pulling latest changes..."
             git pull origin master
 
-            echo "Building application..."
-            npm run build
-
             echo "Copying dist folder..."
             cp -a dist/. /home/elitfigj/deluxconex.com/
 
