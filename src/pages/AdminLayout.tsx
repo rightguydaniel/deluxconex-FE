@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiMenu, FiX, FiHome, FiBox, FiUsers, FiFileText, FiDollarSign } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { FiMenu, FiX, FiHome, FiBox, FiUsers, FiFileText, FiDollarSign, FiSettings, FiLogOut } from 'react-icons/fi';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface SidebarItem {
   name: string;
@@ -15,6 +15,7 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const navigate = useNavigate();
   const currentPath = window.location.pathname;
 
   const sidebarItems: SidebarItem[] = [
@@ -25,6 +26,11 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { name: 'Invoices', icon: <FiDollarSign />, path: '/admin/invoices' },
     // { name: 'Payment Methods', icon: <FiCreditCard />, path: '/admin/payment-methods' },
   ];
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/auth');
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -66,6 +72,29 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                   ))}
                 </ul>
               </nav>
+
+              <div className="mt-auto space-y-2 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  className={`w-full flex items-center p-3 rounded-lg transition-colors ${currentPath === '/admin/settings' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 text-gray-700'}`}
+                  onClick={() => navigate('/admin/settings')}
+                >
+                  <span className="mr-3">
+                    <FiSettings />
+                  </span>
+                  <span>Settings</span>
+                </button>
+                <button
+                  type="button"
+                  className="w-full flex items-center p-3 rounded-lg transition-colors hover:bg-gray-100 text-gray-700"
+                  onClick={handleLogout}
+                >
+                  <span className="mr-3">
+                    <FiLogOut />
+                  </span>
+                  <span>Logout</span>
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

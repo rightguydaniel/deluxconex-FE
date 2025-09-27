@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   FiUsers,
   FiChevronDown,
@@ -12,6 +12,7 @@ import AdminUserPaymentMethods from "../components/admin/AdminUserPaymentMethods
 import AdminUserAddresses from "../components/admin/AdminUserAddresses";
 import AdminUserCart from "../components/admin/AdminUserCart";
 import AdminUserInvoices from "../components/admin/AdminUserInvoices";
+import api from "../services/api";
 
 interface User {
   id: string;
@@ -33,42 +34,66 @@ const AdminUserManagement = () => {
   const [expandedUsers, setExpandedUsers] = useState<Record<string, boolean>>(
     {}
   );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - replace with API calls
-  useEffect(() => {
-    const mockUsers: User[] = [
-      {
-        id: "user-001",
-        full_name: "John Doe",
-        user_name: "johndoe",
-        email: "john@example.com",
-        phone: "+1234567890",
-        role: "user",
-        blocked_at: null,
-        deleted_at: null,
-        createdAt: "2023-01-15T10:30:00Z",
-      },
-      {
-        id: "user-002",
-        full_name: "Jane Smith",
-        user_name: "janesmith",
-        email: "jane@example.com",
-        phone: "+1987654321",
-        role: "admin",
-        blocked_at: null,
-        deleted_at: null,
-        createdAt: "2023-02-20T14:15:00Z",
-      },
-    ];
-    setUsers(mockUsers);
+  const syncSelectedUser = useCallback((list: User[]) => {
+    setSelectedUser((prev) => {
+      if (!prev) {
+        return null;
+      }
+      const updated = list.find((user) => user.id === prev.id);
+      return updated ?? null;
+    });
+
+    setExpandedUsers((prev) => {
+      const validIds = new Set(list.map((user) => user.id));
+      const next: Record<string, boolean> = {};
+      Object.entries(prev).forEach(([id, value]) => {
+        if (validIds.has(id)) {
+          next[id] = value;
+        }
+      });
+      return next;
+    });
   }, []);
 
-  const filteredUsers = users.filter(
-    (user) =>
-      user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.user_name.toLowerCase().includes(searchTerm.toLowerCase())
+  const fetchUsers = useCallback(
+    async (term: string) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const params = term.trim()
+          ? {
+              search: term.trim(),
+            }
+          : undefined;
+        const response = await api.get("/admin/users", { params });
+        const fetchedUsers: User[] = response.data?.data ?? [];
+        setUsers(fetchedUsers);
+        syncSelectedUser(fetchedUsers);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Unable to fetch users";
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [syncSelectedUser]
   );
+
+  useEffect(() => {
+    fetchUsers("");
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchUsers(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [fetchUsers, searchTerm]);
 
   const toggleUserExpansion = (userId: string) => {
     setExpandedUsers((prev) => ({
@@ -77,39 +102,81 @@ const AdminUserManagement = () => {
     }));
   };
 
-  const handleBlockUser = (userId: string) => {
-    setUsers(
-      users.map((user) =>
-        user.id === userId
-          ? {
-              ...user,
-              blocked_at: user.blocked_at ? null : new Date().toISOString(),
-            }
-          : user
-      )
+  const handleUserSync = useCallback((updatedUser: User) => {
+    setUsers((prev) =>
+      prev.map((user) => (user.id === updatedUser.id ? updatedUser : user))
     );
-  };
 
-  const handleDeleteUser = (userId: string) => {
-    setUsers(
-      users.map((user) =>
-        user.id === userId
-          ? {
-              ...user,
-              deleted_at: user.deleted_at ? null : new Date().toISOString(),
-            }
-          : user
-      )
+    setSelectedUser((prev) =>
+      prev && prev.id === updatedUser.id ? updatedUser : prev
     );
-  };
+  }, []);
 
-  const handleRoleChange = (userId: string, newRole: "user" | "admin") => {
-    setUsers(
-      users.map((user) =>
-        user.id === userId ? { ...user, role: newRole } : user
-      )
-    );
-  };
+  const handleBlockUser = useCallback(
+    async (userId: string, shouldBlock?: boolean) => {
+      const targetUser = users.find((user) => user.id === userId);
+      if (!targetUser) {
+        return;
+      }
+
+      const desiredState =
+        typeof shouldBlock === "boolean"
+          ? shouldBlock
+          : targetUser.blocked_at === null;
+
+      const response = await api.patch(`/admin/users/${userId}/block`, {
+        blocked: desiredState,
+      });
+
+      const updated = {
+        ...targetUser,
+        blocked_at: response.data?.data?.blocked_at ?? null,
+      };
+
+      handleUserSync(updated);
+    },
+    [handleUserSync, users]
+  );
+
+  const handleDeleteUser = useCallback(
+    async (userId: string, shouldDelete?: boolean) => {
+      const targetUser = users.find((user) => user.id === userId);
+      if (!targetUser) {
+        return;
+      }
+
+      const desiredState =
+        typeof shouldDelete === "boolean"
+          ? shouldDelete
+          : targetUser.deleted_at === null;
+
+      const response = await api.patch(`/admin/users/${userId}/delete`, {
+        deleted: desiredState,
+      });
+
+      const updated = {
+        ...targetUser,
+        deleted_at: response.data?.data?.deleted_at ?? null,
+      };
+
+      handleUserSync(updated);
+    },
+    [handleUserSync, users]
+  );
+
+  const handleRoleChange = useCallback(
+    async (userId: string, newRole: "user" | "admin") => {
+      const targetUser = users.find((user) => user.id === userId);
+      if (!targetUser || targetUser.role === newRole) {
+        return;
+      }
+
+      await api.patch(`/admin/users/${userId}/role`, { role: newRole });
+      const updated = { ...targetUser, role: newRole };
+      handleUserSync(updated);
+    },
+    [handleUserSync, users]
+  );
 
   return (
     <AdminLayout>
@@ -135,17 +202,22 @@ const AdminUserManagement = () => {
             </div>
           </div>
 
-          {filteredUsers.length === 0 ? (
+          {error ? (
+            <div className="p-6 text-center text-red-500">{error}</div>
+          ) : isLoading ? (
+            <div className="p-6 text-center text-gray-500">Loading users...</div>
+          ) : users.length === 0 ? (
             <div className="p-6 text-center text-gray-500">No users found</div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
+              {users.map((user) => (
                 <div key={user.id} className="p-4">
                   <div
                     className="flex justify-between items-center cursor-pointer"
                     onClick={() => {
                       toggleUserExpansion(user.id);
                       setSelectedUser(user);
+                      setActiveTab("profile");
                     }}
                   >
                     <div className="flex items-center">
@@ -250,14 +322,15 @@ const AdminUserManagement = () => {
                       </div>
 
                       <div className="bg-gray-50 p-4 rounded-lg">
-                        {activeTab === "profile" && (
-                          <AdminUserProfile
-                            user={selectedUser}
-                            onBlockUser={handleBlockUser}
-                            onDeleteUser={handleDeleteUser}
-                            onRoleChange={handleRoleChange}
-                          />
-                        )}
+                      {activeTab === "profile" && (
+                        <AdminUserProfile
+                          user={selectedUser}
+                          onBlockUser={handleBlockUser}
+                          onDeleteUser={handleDeleteUser}
+                          onRoleChange={handleRoleChange}
+                          onUserUpdated={handleUserSync}
+                        />
+                      )}
                         {activeTab === "orders" && (
                           <AdminUserOrders userId={selectedUser.id} />
                         )}

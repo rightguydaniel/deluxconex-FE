@@ -1,39 +1,162 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { FiUser, FiMail, FiPhone, FiLock, FiSave, FiX } from 'react-icons/fi';
+import api from '../../services/api';
 
-interface AdminUserProfileProps {
-  user: {
-    id: string;
-    full_name: string;
-    user_name: string;
-    email: string;
-    phone: string;
-    role: 'user' | 'admin';
-    blocked_at: string | null;
-    deleted_at: string | null;
-  };
-  onBlockUser: (userId: string) => void;
-  onDeleteUser: (userId: string) => void;
-  onRoleChange: (userId: string, role: 'user' | 'admin') => void;
+interface AdminUser {
+  id: string;
+  full_name: string;
+  user_name: string;
+  email: string;
+  phone: string;
+  role: 'user' | 'admin';
+  blocked_at: string | null;
+  deleted_at: string | null;
+  createdAt: string;
 }
 
-const AdminUserProfile = ({ user, onBlockUser, onDeleteUser, onRoleChange }: AdminUserProfileProps) => {
+interface AdminUserProfileProps {
+  user: AdminUser;
+  onBlockUser: (userId: string, blocked?: boolean) => Promise<void>;
+  onDeleteUser: (userId: string, deleted?: boolean) => Promise<void>;
+  onRoleChange: (userId: string, role: 'user' | 'admin') => Promise<void>;
+  onUserUpdated: (user: AdminUser) => void;
+}
+
+const getErrorMessage = (error: unknown): string => {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const err = error as { response?: { data?: { message?: string; errorMessage?: string } } };
+    return (
+      err.response?.data?.message ||
+      err.response?.data?.errorMessage ||
+      'An unexpected error occurred'
+    );
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'An unexpected error occurred';
+};
+
+const AdminUserProfile = ({
+  user,
+  onBlockUser,
+  onDeleteUser,
+  onRoleChange,
+  onUserUpdated,
+}: AdminUserProfileProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState(user);
   const [tempPassword, setTempPassword] = useState('');
-  
+  const [isSaving, setIsSaving] = useState(false);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [statusLoading, setStatusLoading] = useState<'block' | 'delete' | null>(null);
+  const [roleUpdating, setRoleUpdating] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setEditedUser({ ...editedUser, [name]: value });
-  };
+  useEffect(() => {
+    setEditedUser(user);
+  }, [user]);
 
-  const handleSave = () => {
-    // Here you would make an API call to update the user
-    console.log('Saving user:', editedUser);
+  useEffect(() => {
+    setTempPassword('');
     setIsEditing(false);
-    // In a real app, you would update the parent state or make an API call
+    setAlert(null);
+  }, [user.id]);
+
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setEditedUser((prev) => ({ ...prev, [name]: value }));
   };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setAlert(null);
+
+    try {
+      const payload: Partial<AdminUser> & { password?: string } = {
+        full_name: editedUser.full_name,
+        user_name: editedUser.user_name,
+        email: editedUser.email,
+        phone: editedUser.phone,
+      };
+
+      if (tempPassword.trim().length > 0) {
+        payload.password = tempPassword;
+      }
+
+      const response = await api.put(`/admin/users/${user.id}`, payload);
+      const updated: AdminUser = {
+        ...(response.data?.data ?? editedUser),
+        createdAt: response.data?.data?.createdAt ?? user.createdAt,
+      };
+
+      onUserUpdated(updated);
+      setEditedUser(updated);
+      setTempPassword('');
+      setIsEditing(false);
+      setAlert({ type: 'success', message: 'Profile updated successfully.' });
+    } catch (error) {
+      setAlert({ type: 'error', message: getErrorMessage(error) });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const toggleBlockUser = async () => {
+    setStatusLoading('block');
+    setAlert(null);
+    try {
+      await onBlockUser(user.id, !user.blocked_at);
+      setAlert({
+        type: 'success',
+        message: user.blocked_at ? 'User unblocked successfully.' : 'User blocked successfully.',
+      });
+    } catch (error) {
+      setAlert({ type: 'error', message: getErrorMessage(error) });
+    } finally {
+      setStatusLoading(null);
+    }
+  };
+
+  const toggleDeleteUser = async () => {
+    setStatusLoading('delete');
+    setAlert(null);
+    try {
+      await onDeleteUser(user.id, !user.deleted_at);
+      setAlert({
+        type: 'success',
+        message: user.deleted_at ? 'User restored successfully.' : 'User archived successfully.',
+      });
+    } catch (error) {
+      setAlert({ type: 'error', message: getErrorMessage(error) });
+    } finally {
+      setStatusLoading(null);
+    }
+  };
+
+  const handleRoleSelect = async (event: ChangeEvent<HTMLSelectElement>) => {
+    const newRole = event.target.value as 'user' | 'admin';
+    if (newRole === user.role) {
+      setEditedUser((prev) => ({ ...prev, role: newRole }));
+      return;
+    }
+
+    setRoleUpdating(true);
+    setAlert(null);
+    try {
+      await onRoleChange(user.id, newRole);
+      setEditedUser((prev) => ({ ...prev, role: newRole }));
+      setAlert({ type: 'success', message: 'Role updated successfully.' });
+    } catch (error) {
+      setAlert({ type: 'error', message: getErrorMessage(error) });
+    } finally {
+      setRoleUpdating(false);
+    }
+  };
+
+  const isToggling = useMemo(() => statusLoading !== null, [statusLoading]);
 
   return (
     <div className="space-y-4">
@@ -43,16 +166,24 @@ const AdminUserProfile = ({ user, onBlockUser, onDeleteUser, onRoleChange }: Adm
           {isEditing ? (
             <>
               <button
-                onClick={() => setIsEditing(false)}
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditedUser(user);
+                  setTempPassword('');
+                  setAlert(null);
+                }}
                 className="px-3 py-1 bg-gray-200 text-gray-700 rounded flex items-center"
+                disabled={isSaving}
               >
                 <FiX className="mr-1" /> Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-3 py-1 bg-blue-600 text-white rounded flex items-center"
+                className="px-3 py-1 bg-blue-600 text-white rounded flex items-center disabled:opacity-70"
+                disabled={isSaving}
               >
-                <FiSave className="mr-1" /> Save
+                <FiSave className="mr-1" />
+                {isSaving ? 'Saving...' : 'Save'}
               </button>
             </>
           ) : (
@@ -65,6 +196,18 @@ const AdminUserProfile = ({ user, onBlockUser, onDeleteUser, onRoleChange }: Adm
           )}
         </div>
       </div>
+
+      {alert && (
+        <div
+          className={`rounded-md px-4 py-2 text-sm ${
+            alert.type === 'success'
+              ? 'bg-green-50 text-green-700'
+              : 'bg-red-50 text-red-700'
+          }`}
+        >
+          {alert.message}
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center">
@@ -147,7 +290,7 @@ const AdminUserProfile = ({ user, onBlockUser, onDeleteUser, onRoleChange }: Adm
               <input
                 type="password"
                 value={tempPassword}
-                onChange={(e) => setTempPassword(e.target.value)}
+                onChange={(event) => setTempPassword(event.target.value)}
                 placeholder="Enter new password"
                 className="w-full px-3 py-2 border border-gray-300 rounded"
               />
@@ -162,12 +305,9 @@ const AdminUserProfile = ({ user, onBlockUser, onDeleteUser, onRoleChange }: Adm
               {isEditing ? (
                 <select
                   value={editedUser.role}
-                  onChange={(e) => {
-                    const newRole = e.target.value as 'user' | 'admin';
-                    setEditedUser({ ...editedUser, role: newRole });
-                    onRoleChange(user.id, newRole);
-                  }}
+                  onChange={handleRoleSelect}
                   className="mt-1 px-3 py-2 border border-gray-300 rounded"
+                  disabled={roleUpdating}
                 >
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
@@ -178,24 +318,34 @@ const AdminUserProfile = ({ user, onBlockUser, onDeleteUser, onRoleChange }: Adm
             </div>
             <div className="flex space-x-2">
               <button
-                onClick={() => onBlockUser(user.id)}
-                className={`px-3 py-1 rounded flex items-center ${
-                  user.blocked_at 
-                    ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                onClick={toggleBlockUser}
+                className={`px-3 py-1 rounded flex items-center disabled:opacity-70 ${
+                  user.blocked_at
+                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
                     : 'bg-red-100 text-red-800 hover:bg-red-200'
                 }`}
+                disabled={isToggling}
               >
-                {user.blocked_at ? 'Unblock User' : 'Block User'}
+                {statusLoading === 'block'
+                  ? 'Updating...'
+                  : user.blocked_at
+                  ? 'Unblock User'
+                  : 'Block User'}
               </button>
               <button
-                onClick={() => onDeleteUser(user.id)}
-                className={`px-3 py-1 rounded flex items-center ${
-                  user.deleted_at 
-                    ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' 
+                onClick={toggleDeleteUser}
+                className={`px-3 py-1 rounded flex items-center disabled:opacity-70 ${
+                  user.deleted_at
+                    ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
                     : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                 }`}
+                disabled={isToggling}
               >
-                {user.deleted_at ? 'Restore User' : 'Delete User'}
+                {statusLoading === 'delete'
+                  ? 'Updating...'
+                  : user.deleted_at
+                  ? 'Restore User'
+                  : 'Delete User'}
               </button>
             </div>
           </div>

@@ -12,6 +12,7 @@ import AdminOrdersPage from "./pages/AdminOrderPage";
 import AdminInvoicesPage from "./pages/AdminInvoicesPage";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminSettingsPage from "./pages/AdminSettingsPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CheckoutCancel from "./pages/CheckoutCancel";
@@ -33,6 +34,7 @@ function App() {
         <Route path="/admin/orders" element={<AdminOrdersPage />} />
         <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
         <Route path="/admin/users" element={<AdminUserManagement />} />
+        <Route path="/admin/settings" element={<AdminSettingsPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/checkout/cancel" element={<CheckoutCancel />} />
