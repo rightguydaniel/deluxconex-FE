@@ -1,11 +1,18 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+
+interface FilterOption {
+  label: string;
+  value: string;
+}
 
 interface FilterSectionProps {
   title: string;
-  options: string[];
+  options: FilterOption[];
   selected?: string;
   onSelect?: (value: string) => void;
+  disabled?: boolean;
 }
 
 const FilterSection = ({
@@ -13,26 +20,33 @@ const FilterSection = ({
   options,
   selected,
   onSelect,
+  disabled = false,
 }: FilterSectionProps) => {
   return (
     <div className="py-3 border-t border-gray-200">
       <p className="text-sm font-bold mb-3">{title}</p>
       <div className="flex flex-wrap gap-2">
         {options
-          .filter(Boolean) // Remove empty items
+          .filter((item) => Boolean(item.value))
           .map((item) => (
             <motion.button
-              key={item}
+              key={item.value}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                selected === item
+                selected === item.value
                   ? "bg-dark text-white"
                   : "bg-gray-100 text-dark hover:bg-gray-200"
-              }`}
-              onClick={() => onSelect?.(item)}
+              } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+              onClick={() => {
+                if (!disabled) {
+                  onSelect?.(item.value);
+                }
+              }}
+              type="button"
+              disabled={disabled}
             >
-              {item}
+              {item.label}
             </motion.button>
           ))}
       </div>
@@ -45,91 +59,158 @@ interface FilterProps {
   initialFilters?: Record<string, string>;
 }
 
-export const Filter = ({  initialFilters = {} }: FilterProps) => {
-  const [filters, setFilters] =
-    useState<Record<string, string>>(initialFilters);
-  // const [zipCode, setZipCode] = useState("");
+const defaultFilters: Record<string, string> = {
+  search: "",
+  size: "",
+  category: "",
+  sort: "",
+};
 
-  const filterSections = [
+export const Filter = ({
+  initialFilters = defaultFilters,
+  onFilter,
+}: FilterProps) => {
+  const [filters, setFilters] = useState<Record<string, string>>({
+    ...defaultFilters,
+    ...initialFilters,
+  });
+  const [searchTerm, setSearchTerm] = useState(filters.search ?? "");
+
+  const trimmedSearchTerm = searchTerm.trim();
+  const appliedSearch = filters.search ?? "";
+  const filtersDisabled =
+    trimmedSearchTerm.length > 0 && trimmedSearchTerm !== appliedSearch;
+
+  useEffect(() => {
+    setFilters({
+      ...defaultFilters,
+      ...initialFilters,
+    });
+    setSearchTerm(initialFilters.search ?? "");
+  }, [initialFilters]);
+
+  const filterSections: Array<{
+    title: string;
+    options: FilterOption[];
+    key: string;
+  }> = [
     {
       title: "Size",
-      options: ["10 ft", "16 ft", "20 ft", "24 ft", "30 ft", "40 ft", "45 ft"],
+      options: [
+        "10ft",
+        "16ft",
+        "20ft",
+        "24ft",
+        "30ft",
+        "40ft",
+        "45ft",
+      ].map((value) => ({ label: value, value })),
       key: "size",
     },
     {
       title: "Category",
       options: [
-        "Bleacher",
-        "Conjoined",
-        "Dry",
-        "Flat rack",
-        "Ground level office",
-        "Hazmat",
-        "Machinery enclosure",
-        "Mining container",
-        "Office trailer",
-        "Portable self storage",
-      ],
+        "containers",
+        "office containers",
+        "cold storage",
+        "conjoined containers",
+        "ground level office",
+        "hazmat storage",
+        "parts",
+        "chasis",
+        "rent",
+      ].map((value) => ({ label: value, value })),
       key: "category",
     },
     {
-      title: "Grade",
-      options: ["3-trip", "New", "Refurbished", "Used"],
-      key: "grade",
-    },
-    {
-      title: "Height",
-      options: ["High cube (9.5ft)", "Standard (8.5ft)"],
-      key: "height",
-    },
-    {
-      title: "Attributes",
-      options: ["Double door", "Hard top", "Open side", "Soft top"],
-      key: "attributes",
-    },
-    {
-      title: "Width",
-      options: ["7 ft", "10 ft", "16 ft"],
-      key: "width",
-    },
-    {
       title: "Sort by",
-      options: ["Price", "Popularity", "Newest"],
+      options: [
+        { label: "Price: Low to High", value: "price_asc" },
+        { label: "Price: High to Low", value: "price_desc" },
+        { label: "Oldest", value: "oldest" },
+        { label: "Newest", value: "newest" },
+      ],
       key: "sort",
     },
   ];
 
-  const handleSelect = (key: string, value: string) => {
-    const newFilters = {
-      ...filters,
-      [key]: filters[key] === value ? "" : value, // Toggle selection
-    };
-    setFilters(newFilters);
+  const emitFilters = (nextFilters: Record<string, string>) => {
+    const cleaned = Object.fromEntries(
+      Object.entries(nextFilters).filter(([, value]) => value && value.trim())
+    );
+    onFilter?.(cleaned);
   };
 
-  // const handleApplyFilters = () => {
-  //   onFilter?.({ ...filters, zipCode });
-  // };
+  const handleSelect = (key: string, value: string) => {
+    const toggledValue = filters[key] === value ? "" : value;
+    const nextFilters = {
+      ...filters,
+      [key]: toggledValue,
+    };
+    setFilters(nextFilters);
+    emitFilters(nextFilters);
+  };
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmed = searchTerm.trim();
+    if (!trimmed) {
+      handleClearSearch();
+      return;
+    }
+
+    const nextFilters = {
+      ...defaultFilters,
+      search: trimmed,
+    };
+    setSearchTerm(trimmed);
+    setFilters(nextFilters);
+    emitFilters(nextFilters);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
+    const nextFilters = { ...defaultFilters };
+    setFilters(nextFilters);
+    emitFilters(nextFilters);
+  };
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-sm">
-      {/* <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Your ZIP"
-          value={zipCode}
-          onChange={(e) => setZipCode(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-dark focus:border-transparent"
-        />
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleApplyFilters}
-          className="w-full mt-3 bg-dark text-white text-sm font-bold py-2.5 rounded-lg hover:bg-dark transition"
-        >
-          See prices
-        </motion.button>
-      </div> */}
+      <form className="mb-4" onSubmit={handleSearchSubmit}>
+        <label className="block text-sm font-bold mb-2" htmlFor="product-search">
+          Search
+        </label>
+        <div className="flex gap-2 items-center">
+          <div className="relative flex-1">
+            <input
+              id="product-search"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-dark"
+              placeholder="Search products"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-lg leading-none"
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
+            type="submit"
+            className="px-4 py-2 bg-dark text-white rounded-lg text-sm font-semibold"
+          >
+            Search
+          </motion.button>
+        </div>
+      </form>
 
       <h4 className="text-lg font-bold mb-2">Filters</h4>
 
@@ -141,6 +222,7 @@ export const Filter = ({  initialFilters = {} }: FilterProps) => {
             options={section.options}
             selected={filters[section.key]}
             onSelect={(value) => handleSelect(section.key, value)}
+            disabled={filtersDisabled}
           />
         ))}
       </div>

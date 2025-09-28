@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useMediaQuery } from "react-responsive";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
@@ -19,6 +19,36 @@ import {
 } from "../config/seo";
 
 // Product Interface
+type ProductSpecification =
+  | string
+  | {
+      title?: string;
+      value?: string;
+      [key: string]: unknown;
+    };
+
+interface ProductCondition {
+  condition: string;
+  price: number;
+  images: string[];
+  description?: string;
+  specifications?: ProductSpecification[];
+}
+
+interface ProductDimension {
+  dimension: string;
+  price?: number;
+  images?: string[];
+  description?: string;
+  specifications?: ProductSpecification[];
+  conditions?: ProductCondition[];
+}
+
+interface DeliveryOption {
+  method: string;
+  price: number;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -27,8 +57,8 @@ interface Product {
   description: string;
   images: string[];
   categories: string[];
-  dimensions: any[];
-  delivery: any[];
+  dimensions?: ProductDimension[];
+  delivery?: DeliveryOption[];
 }
 
 interface PaginationInfo {
@@ -101,7 +131,7 @@ export const Shop = () => {
   const isDesktop = useMediaQuery({ minWidth: 1024 });
   const [showSidebar, setShowSidebar] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [cart, setCart] = useState<{ id: string; quantity: number }[]>([]);
+  const [, setCart] = useState<{ id: string; quantity: number }[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,7 +143,28 @@ export const Shop = () => {
     hasNext: false,
     hasPrev: false,
   });
-  console.log(cart)
+  const normalizedCategory = category
+    ? decodeURIComponent(category).toLowerCase()
+    : "";
+
+  const buildInitialFilters = (): Record<string, string> =>
+    normalizedCategory ? { category: normalizedCategory } : {};
+
+  const [filters, setFilters] = useState<Record<string, string>>(buildInitialFilters);
+
+  const areFiltersEqual = (
+    first: Record<string, string>,
+    second: Record<string, string>
+  ) => {
+    const firstKeys = Object.keys(first);
+    const secondKeys = Object.keys(second);
+
+    if (firstKeys.length !== secondKeys.length) {
+      return false;
+    }
+
+    return firstKeys.every((key) => first[key] === second[key]);
+  };
 
   const decodedCategory = category ? decodeURIComponent(category) : undefined;
   const formattedCategory = decodedCategory
@@ -181,46 +232,83 @@ export const Shop = () => {
     })),
   };
 
-  // Fetch products based on category and page
-  const fetchProducts = async (page: number = 1) => {
-    try {
-      setLoading(true);
-      let url = category
-        ? `/products/category/${category}?page=${page}&limit=7`
-        : `/products/products?page=${page}&limit=7`;
+  const fetchProducts = useCallback(
+    async (page: number, appliedFilters: Record<string, string>) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const response = await api.get(url);
+        const params = new URLSearchParams();
+        params.set("page", page.toString());
+        params.set("limit", "7");
 
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error(`Failed to fetch products: ${response.status}`);
-      }
-
-      const data = response.data;
-
-      if (data.success) {
-        setProducts(data.data.products || []);
-        setPagination({
-          currentPage: data.data.pagination.currentPage,
-          totalPages: data.data.pagination.totalPages,
-          totalProducts: data.data.pagination.totalProducts,
-          hasNext: data.data.pagination.hasNext,
-          hasPrev: data.data.pagination.hasPrev,
+        Object.entries(appliedFilters).forEach(([key, value]) => {
+          if (value) {
+            params.set(key, value);
+          }
         });
-      } else {
-        throw new Error(data.message || "Failed to fetch products");
+
+        const response = await api.get(`/products/products?${params.toString()}`);
+
+        if (response.status < 200 || response.status >= 300) {
+          throw new Error(`Failed to fetch products: ${response.status}`);
+        }
+
+        const data = response.data;
+
+        if (data.success) {
+          setProducts(data.data.products || []);
+          setPagination({
+            currentPage: data.data.pagination.currentPage,
+            totalPages: data.data.pagination.totalPages,
+            totalProducts: data.data.pagination.totalProducts,
+            hasNext: data.data.pagination.hasNext,
+            hasPrev: data.data.pagination.hasPrev,
+          });
+        } else {
+          throw new Error(data.message || "Failed to fetch products");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+        console.error("Error fetching products:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      console.error("Error fetching products:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    []
+  );
 
   useEffect(() => {
+    setFilters((previous) => {
+      if (normalizedCategory) {
+        if (previous.category === normalizedCategory) {
+          return previous;
+        }
+        return { ...previous, category: normalizedCategory };
+      }
+
+      if (!normalizedCategory && previous.category) {
+        const rest: Record<string, string> = { ...previous };
+        delete rest.category;
+        return rest;
+      }
+
+      return previous;
+    });
     setCurrentPage(1);
-    fetchProducts(1);
-  }, [category]);
+  }, [normalizedCategory]);
+
+  useEffect(() => {
+    fetchProducts(currentPage, filters);
+  }, [fetchProducts, currentPage, filters]);
+
+  const handleFilterChange = (nextFilters: Record<string, string>) => {
+    setFilters((previous) => {
+      const updated = { ...nextFilters };
+      return areFiltersEqual(previous, updated) ? previous : updated;
+    });
+    setCurrentPage(1);
+  };
 
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -248,7 +336,6 @@ export const Shop = () => {
     if (newPage < 1 || newPage > pagination.totalPages) return;
 
     setCurrentPage(newPage);
-    fetchProducts(newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -337,7 +424,10 @@ export const Shop = () => {
             <div className="flex">
               {/* Filters - Left Side */}
               <div className="w-1/4 pr-4">
-                <Filter />
+                <Filter
+                  initialFilters={filters}
+                  onFilter={handleFilterChange}
+                />
               </div>
 
               {/* Product List - Middle */}
@@ -428,7 +518,10 @@ export const Shop = () => {
                       transition={{ duration: 0.2 }}
                       className="bg-white rounded-lg shadow-lg p-4 mb-4 z-10"
                     >
-                      <Filter />
+                      <Filter
+                        initialFilters={filters}
+                        onFilter={handleFilterChange}
+                      />
                     </motion.div>
                     <div
                       className="fixed inset-0 bg-black bg-opacity-30 z-0"
