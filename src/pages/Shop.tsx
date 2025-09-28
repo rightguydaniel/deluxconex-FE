@@ -116,6 +116,7 @@ const SaleItem = ({ product, onAddToCart }: SaleItemProps) => {
           onClick={(e) => {
             e.stopPropagation();
             onAddToCart?.();
+            navigate(`/product/${product.id}`)
           }}
           className="bg-light text-dark rounded py-3 px-2 text-lg font-bold hover:bg-light/90 transition-colors self-start"
         >
