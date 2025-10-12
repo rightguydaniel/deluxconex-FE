@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useMediaQuery } from "react-responsive";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
@@ -144,6 +144,7 @@ export const Shop = () => {
     hasNext: false,
     hasPrev: false,
   });
+  const contactRef = useRef<HTMLDivElement | null>(null);
   const normalizedCategory = category
     ? decodeURIComponent(category).toLowerCase()
     : "";
@@ -241,7 +242,7 @@ export const Shop = () => {
 
         const params = new URLSearchParams();
         params.set("page", page.toString());
-        params.set("limit", "7");
+        params.set("limit", "5");
 
         Object.entries(appliedFilters).forEach(([key, value]) => {
           if (value) {
@@ -317,6 +318,10 @@ export const Shop = () => {
 
   const toggleMobileFilters = () => {
     setShowMobileFilters(!showMobileFilters);
+  };
+
+  const scrollToContact = () => {
+    contactRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const addToCart = (productId: string) => {
@@ -492,7 +497,7 @@ export const Shop = () => {
 
               {/* Content - Right Side */}
               <div className="w-1/4 pl-4">
-                <Content />
+                <Content onGetQuoteClick={scrollToContact} />
               </div>
             </div>
           ) : (
@@ -578,13 +583,15 @@ export const Shop = () => {
 
               {/* Content */}
               <div className="bg-white rounded-lg shadow-sm p-4">
-                <Content />
+                <Content onGetQuoteClick={scrollToContact} />
               </div>
             </div>
           )}
 
           <footer className="mt-8">
-            <Contact />
+            <div ref={contactRef} id="contact">
+              <Contact />
+            </div>
             <Footer />
           </footer>
         </main>
