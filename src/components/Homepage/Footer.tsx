@@ -136,8 +136,8 @@ export const Footer = () => {
           <span>|</span>
           <span>7am – 6pm Mon-Sat</span>
           <span>|</span>
-          <a href="mailto:quote@deluxconex.com" className="hover:text-blue-500">
-            quote@deluxconex.com
+          <a href="mailto:admin@deluxconex.com" className="hover:text-blue-500">
+            admin@deluxconex.com
           </a>
           <span>|</span>
           <a href="tel:+17869529946" className="hover:text-blue-500">
