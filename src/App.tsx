@@ -16,6 +16,8 @@ import AdminSettingsPage from "./pages/AdminSettingsPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CheckoutCancel from "./pages/CheckoutCancel";
+import WirePaymentPage from "./pages/WirePaymentPage";
+import AdminPaymentRequestsPage from "./pages/AdminPaymentRequestsPage";
 
 function App() {
   return (
@@ -34,10 +36,12 @@ function App() {
         <Route path="/admin/orders" element={<AdminOrdersPage />} />
         <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
         <Route path="/admin/users" element={<AdminUserManagement />} />
+        <Route path="/admin/payment-requests" element={<AdminPaymentRequestsPage />} />
         <Route path="/admin/settings" element={<AdminSettingsPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/checkout/cancel" element={<CheckoutCancel />} />
+        <Route path="/payment/wire" element={<WirePaymentPage />} />
       </Routes>
     </BrowserRouter>
   );

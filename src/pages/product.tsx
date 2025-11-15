@@ -53,6 +53,7 @@ interface Product {
   images: string[];
   dimensions: ProductDimension[];
   delivery: ProductDelivery[];
+  colors?: string[];
 }
 
 export interface CartItem {
@@ -61,6 +62,7 @@ export interface CartItem {
   basePrice: number; // The base price from the product
   quantity: number;
   image: string; // Main product image or selected variant image
+  selectedColor?: string;
   selectedDimension?: {
     dimension: string;
     priceAdjustment?: number; // Price difference from base price
@@ -92,6 +94,7 @@ export const Product = () => {
   const [selectedCondition, setSelectedCondition] = useState<string | null>(
     null
   );
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [product, setProduct] = useState<Product | null>(null);
@@ -212,6 +215,10 @@ export const Product = () => {
                     : cond.specifications,
               })) || [],
           })),
+          colors:
+            typeof data.colors === "string"
+              ? JSON.parse(data.colors)
+              : data.colors,
         };
 
         setProduct(parsedData);
@@ -219,6 +226,11 @@ export const Product = () => {
         // Auto-select the first dimension if there's only one
         if (parsedData.dimensions.length === 1) {
           setSelectedDimension(parsedData.dimensions[0].dimension);
+        }
+
+        // Auto-select the first color if there's only one
+        if (parsedData.colors && parsedData.colors.length === 1) {
+          setSelectedColor(parsedData.colors[0]);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
@@ -381,6 +393,16 @@ export const Product = () => {
   const handleAddToCart = async () => {
     if (!product) return;
 
+    if (product.colors && product.colors.length > 0 && !selectedColor) {
+      await Swal.fire({
+        title: "Color Required",
+        text: "Please select a color for this product.",
+        icon: "warning",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
     // Check if user is authenticated
     const token = localStorage.getItem("token");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -414,6 +436,7 @@ export const Product = () => {
         basePrice: product.price, // Original product price
         quantity: quantity,
         image: currentImages[0] || product.images[0],
+        selectedColor: selectedColor || undefined,
         selectedDimension: selectedDimension
           ? {
               dimension: selectedDimension,
@@ -465,6 +488,11 @@ export const Product = () => {
             ${
               selectedCondition
                 ? `<p><strong>Condition:</strong> ${selectedCondition}</p>`
+                : ""
+            }
+            ${
+              selectedColor
+                ? `<p><strong>Color:</strong> ${selectedColor}</p>`
                 : ""
             }
             ${
@@ -689,6 +717,38 @@ export const Product = () => {
                   </h1>
                   {product.sku && (
                     <p className="text-gray-600 mb-4">SKU: {product.sku}</p>
+                  )}
+
+                  {/* Colors - Only show if colors exist */}
+                  {product.colors && product.colors.length > 0 && (
+                    <div className="mb-4">
+                      <p className="font-medium mb-2">Colors</p>
+                      <div className="flex flex-wrap gap-2">
+                        {product.colors.map((color) => {
+                          const isSelected = selectedColor === color;
+                          const label =
+                            color.charAt(0).toUpperCase() + color.slice(1);
+                          return (
+                            <button
+                              key={color}
+                              type="button"
+                              onClick={() =>
+                                setSelectedColor(
+                                  isSelected ? null : color
+                                )
+                              }
+                              className={`px-4 py-2 border rounded-lg ${
+                                isSelected
+                                  ? "bg-dark text-light border-dark"
+                                  : "border-gray-300 hover:bg-gray-100"
+                              }`}
+                            >
+                              {label === "Berge" ? "Berge" : label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
 
                   {/* Dimensions - Only show if dimensions exist and more than one */}

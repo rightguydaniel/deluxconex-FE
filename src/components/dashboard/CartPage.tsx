@@ -16,6 +16,7 @@ interface CartItem {
   basePrice: number;
   quantity: number;
   image: string;
+  selectedColor?: string;
   selectedDimension?: {
     dimension: string;
     priceAdjustment?: number;
@@ -139,53 +140,98 @@ const CartPage = () => {
     }
   };
 
-  // In your CartPage.tsx - update handleCheckout
-const handleCheckout = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/auth");
-      return;
-    }
-
-    setLoading(true);
-    
-    const response = await api.post(
-      "/user/checkout/stripe/session",
-      { cart },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+  const handleCardCheckout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/auth");
+        return;
       }
-    );
-    if(response.data.message==="address required"){
-      navigate("/dashboard/address");
-      return
-    }
 
-    if (response.data.status === "success") {
-      const { orderId, invoiceId, url, sessionId } = response.data.data;
-      
-      // Store order info in localStorage
-      localStorage.setItem("currentOrder", JSON.stringify({
-        orderId,
-        invoiceId,
-        sessionId
-      }));
-      
-      // Redirect to PayPal
-      window.location.href = url;
-    } else {
-      throw new Error(response.data.message || "Failed to create checkout");
+      setLoading(true);
+
+      const response = await api.post(
+        "/user/checkout/stripe/session",
+        { cart },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.data.message === "address required") {
+        navigate("/dashboard/address");
+        return;
+      }
+
+      if (response.data.status === "success") {
+        const { orderId, invoiceId, url, sessionId } = response.data.data;
+
+        localStorage.setItem(
+          "currentOrder",
+          JSON.stringify({
+            orderId,
+            invoiceId,
+            sessionId,
+          })
+        );
+
+        window.location.href = url;
+      } else {
+        throw new Error(response.data.message || "Failed to create checkout");
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("Failed to proceed to checkout. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Checkout error:", err);
-    alert("Failed to proceed to checkout. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
+  const handleWireCheckout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/auth");
+        return;
+      }
+
+      setLoading(true);
+
+      const response = await api.post(
+        "/user/checkout/wire/request",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.message === "address required") {
+        navigate("/dashboard/address");
+        return;
+      }
+
+      if (response.data.status === "success") {
+        alert(
+          "Your wire transfer request has been received. A secure payment link will be sent to your email shortly."
+        );
+        navigate("/dashboard/orders");
+      } else {
+        throw new Error(
+          response.data.message || "Failed to request wire transfer"
+        );
+      }
+    } catch (err) {
+      console.error("Wire checkout error:", err);
+      alert(
+        "Failed to initiate wire transfer request. Please try again or contact support."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleContinueShopping = () => {
     navigate("/shop");
@@ -291,6 +337,11 @@ const handleCheckout = async () => {
                         Condition:{" "}
                         {item.selectedCondition?.condition || "Not specified"}
                       </p>
+                      {item.selectedColor && (
+                        <p className="text-gray-600 text-sm">
+                          Color: {item.selectedColor}
+                        </p>
+                      )}
                       <p className="text-gray-600 text-sm">
                         Delivery:{" "}
                         {item.selectedDelivery?.method || "Not selected"}
@@ -364,12 +415,20 @@ const handleCheckout = async () => {
                 </div>
               </div>
 
-              <button
-                onClick={handleCheckout}
-                className="mt-6 w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 flex items-center justify-center"
-              >
-                Proceed to Checkout <FiChevronRight className="ml-2" />
-              </button>
+              <div className="mt-6 space-y-2">
+                <button
+                  onClick={handleCardCheckout}
+                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 flex items-center justify-center"
+                >
+                  Pay with Card (Stripe) <FiChevronRight className="ml-2" />
+                </button>
+                <button
+                  onClick={handleWireCheckout}
+                  className="w-full bg-white text-blue-600 border border-blue-600 py-3 px-4 rounded-md hover:bg-blue-50 flex items-center justify-center text-sm"
+                >
+                  Pay via Wire Transfer
+                </button>
+              </div>
             </div>
           </div>
         </div>

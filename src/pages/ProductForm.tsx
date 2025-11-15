@@ -44,6 +44,7 @@ interface Product {
   dimensions: Dimension[];
   delivery: DeliveryOption[];
   categories?: string[];
+   colors?: string[];
 }
 
 interface ProductFormProps {
@@ -62,6 +63,17 @@ const CATEGORY_OPTIONS = [
   "parts",
   "chasis",
   "rent",
+];
+
+const COLOR_OPTIONS = [
+  "blue",
+  "green",
+  "white",
+  "berge",
+  "red",
+  "cream",
+  "black",
+  "grey",
 ];
 
 const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
@@ -88,6 +100,7 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
           dimensions: parseDbField(product.dimensions),
           delivery: parseDbField(product.delivery),
           categories: parseDbField(product.categories),
+          colors: parseDbField(product.colors),
         }
       : {
           name: "",
@@ -99,6 +112,7 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
           dimensions: [],
           delivery: [],
           categories: [],
+          colors: [],
         }
   );
 
@@ -620,7 +634,7 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
           </div>
 
           <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
-            {["basic", "specs", "dimensions", "delivery", "categories"].map(
+            {["basic", "specs", "dimensions", "delivery", "categories", "colors"].map(
               (tab) => (
                 <button
                   key={tab}
@@ -1455,6 +1469,45 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "colors" && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Select Available Colors
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {COLOR_OPTIONS.map((color) => {
+                      const isSelected = (formData.colors || []).includes(color);
+                      const label = color.charAt(0).toUpperCase() + color.slice(1);
+                      return (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => {
+                            const current = formData.colors || [];
+                            const next = isSelected
+                              ? current.filter((c) => c !== color)
+                              : [...current, color];
+                            setFormData({ ...formData, colors: next });
+                          }}
+                          className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                            isSelected
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                          }`}
+                        >
+                          {label === "Berge" ? "Berge" : label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    These colors will be shown as selectable options on the product page.
+                  </p>
                 </div>
               </div>
             )}

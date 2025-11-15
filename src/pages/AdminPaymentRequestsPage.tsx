@@ -1,0 +1,296 @@
+import { useEffect, useState } from "react";
+import AdminLayout from "./AdminLayout";
+import api from "../services/api";
+import { FiClock, FiCheckCircle } from "react-icons/fi";
+
+interface PaymentRequest {
+  id: string;
+  userId: string;
+  orderId: string;
+  invoiceId: string;
+  status: string;
+  accountName?: string;
+  accountNumber?: string;
+  routingNumber?: string;
+  bankName?: string;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+const AdminPaymentRequestsPage = () => {
+  const [requests, setRequests] = useState<PaymentRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<PaymentRequest | null>(null);
+  const [form, setForm] = useState({
+    accountName: "",
+    accountNumber: "",
+    routingNumber: "",
+    bankName: "",
+    daysValid: 2,
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/admin/payment-requests");
+      if (response.data.status === "success") {
+        setRequests(response.data.data || []);
+      } else {
+        setError(response.data.message || "Failed to load payment requests");
+      }
+    } catch (err) {
+      console.error("Error loading payment requests:", err);
+      setError("Failed to load payment requests.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const openIssueModal = (request: PaymentRequest) => {
+    setSelected(request);
+    setForm({
+      accountName: request.accountName || "",
+      accountNumber: request.accountNumber || "",
+      routingNumber: request.routingNumber || "",
+      bankName: request.bankName || "",
+      daysValid: 2,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selected) return;
+    setSubmitting(true);
+
+    try {
+      const response = await api.post(
+        `/admin/payment-requests/${selected.id}/issue`,
+        form
+      );
+      if (response.data.status === "success") {
+        await fetchRequests();
+        setSelected(null);
+      } else {
+        alert(response.data.message || "Failed to issue wire details.");
+      }
+    } catch (err) {
+      console.error("Issue wire details error:", err);
+      alert("Failed to issue wire details. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800">
+            Wire Payment Requests
+          </h1>
+        </div>
+
+        {loading ? (
+          <div className="bg-white rounded-lg shadow p-6 text-center">
+            Loading payment requests…
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-lg shadow p-6 text-center text-red-600">
+            {error}
+          </div>
+        ) : requests.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-6 text-center text-gray-600">
+            No wire payment requests found.
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Invoice
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Order
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.map((r) => (
+                  <tr key={r.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {r.invoiceId}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {r.orderId}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {r.userId}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          r.status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : r.status === "issued"
+                            ? "bg-blue-100 text-blue-800"
+                            : r.status === "proof_submitted"
+                            ? "bg-purple-100 text-purple-800"
+                            : r.status === "verified"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {r.status === "pending" && (
+                          <FiClock className="mr-1" />
+                        )}
+                        {r.status === "verified" && (
+                          <FiCheckCircle className="mr-1" />
+                        )}
+                        {r.status.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(r.createdAt).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <button
+                        onClick={() => openIssueModal(r)}
+                        className="px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                        disabled={r.status !== "pending"}
+                      >
+                        Issue details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {selected && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                Issue wire transfer details
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Bank name
+                  </label>
+                  <input
+                    type="text"
+                    value={form.bankName}
+                    onChange={(e) =>
+                      setForm({ ...form, bankName: e.target.value })
+                    }
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Account name
+                  </label>
+                  <input
+                    type="text"
+                    value={form.accountName}
+                    onChange={(e) =>
+                      setForm({ ...form, accountName: e.target.value })
+                    }
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Account number
+                  </label>
+                  <input
+                    type="text"
+                    value={form.accountNumber}
+                    onChange={(e) =>
+                      setForm({ ...form, accountNumber: e.target.value })
+                    }
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Routing number
+                  </label>
+                  <input
+                    type="text"
+                    value={form.routingNumber}
+                    onChange={(e) =>
+                      setForm({ ...form, routingNumber: e.target.value })
+                    }
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Days before link expires
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.daysValid}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        daysValid: Number(e.target.value) || 2,
+                      })
+                    }
+                    className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(null)}
+                    className="px-4 py-2 text-sm rounded border border-gray-300 text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {submitting ? "Sending…" : "Send details"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </AdminLayout>
+  );
+};
+
+export default AdminPaymentRequestsPage;
+

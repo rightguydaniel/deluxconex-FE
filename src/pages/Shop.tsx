@@ -57,6 +57,7 @@ interface Product {
   description: string;
   images: string[];
   categories: string[];
+  colors?: string[];
   dimensions?: ProductDimension[];
   delivery?: DeliveryOption[];
 }

@@ -1,7 +1,17 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiMenu, FiX, FiHome, FiBox, FiUsers, FiFileText, FiDollarSign, FiSettings, FiLogOut } from 'react-icons/fi';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FiMenu,
+  FiX,
+  FiHome,
+  FiBox,
+  FiUsers,
+  FiFileText,
+  FiDollarSign,
+  FiSettings,
+  FiLogOut,
+} from "react-icons/fi";
+import { Link, useNavigate } from "react-router-dom";
 
 interface SidebarItem {
   name: string;
@@ -19,17 +29,17 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const currentPath = window.location.pathname;
 
   const sidebarItems: SidebarItem[] = [
-    { name: 'Dashboard', icon: <FiHome />, path: '/admin' },
-    { name: 'Products', icon: <FiBox />, path: '/admin/products' },
-    { name: 'Users', icon: <FiUsers />, path: '/admin/users' },
-    { name: 'Orders', icon: <FiFileText />, path: '/admin/orders' },
-    { name: 'Invoices', icon: <FiDollarSign />, path: '/admin/invoices' },
-    // { name: 'Payment Methods', icon: <FiCreditCard />, path: '/admin/payment-methods' },
+    { name: "Dashboard", icon: <FiHome />, path: "/admin" },
+    { name: "Products", icon: <FiBox />, path: "/admin/products" },
+    { name: "Users", icon: <FiUsers />, path: "/admin/users" },
+    { name: "Orders", icon: <FiFileText />, path: "/admin/orders" },
+    { name: "Invoices", icon: <FiDollarSign />, path: "/admin/invoices" },
+    { name: "Payment Requests", icon: <FiDollarSign />, path: "/admin/payment-requests" },
   ];
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate('/auth');
+    navigate("/auth");
   };
 
   return (
@@ -49,7 +59,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             initial={{ x: -300 }}
             animate={{ x: 0 }}
             exit={{ x: -300 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed md:relative z-40 w-64 h-full bg-white shadow-lg"
           >
             <div className="p-4 h-full flex flex-col">

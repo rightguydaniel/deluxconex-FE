@@ -8,6 +8,7 @@ interface CartItem {
   basePrice: number;
   quantity: number;
   image?: string;
+  selectedColor?: string;
   selectedDimension?: {
     dimension: string;
     priceAdjustment?: number;
@@ -110,6 +111,7 @@ const AdminUserCart = ({ userId }: { userId: string }) => {
     try {
       const response = await api.patch(`/admin/users/${userId}/cart/items`, {
         productId: item.productId,
+        selectedColor: item.selectedColor,
         selectedDimension: item.selectedDimension,
         selectedCondition: item.selectedCondition,
         selectedDelivery: item.selectedDelivery,
@@ -224,7 +226,7 @@ const AdminUserCart = ({ userId }: { userId: string }) => {
             <div className="bg-white rounded-lg shadow overflow-hidden">
               {cart.items.map((item) => (
                 <div
-                  key={`${item.productId}-${item.selectedDimension?.dimension ?? ""}-${item.selectedCondition?.condition ?? ""}-${item.selectedDelivery?.method ?? ""}`}
+                  key={`${item.productId}-${item.selectedColor ?? ""}-${item.selectedDimension?.dimension ?? ""}-${item.selectedCondition?.condition ?? ""}-${item.selectedDelivery?.method ?? ""}`}
                   className="border-b border-gray-200 last:border-b-0"
                 >
                   <div className="p-4 flex">
@@ -257,6 +259,11 @@ const AdminUserCart = ({ userId }: { userId: string }) => {
                       <p className="text-gray-600 text-sm mt-1">
                         Base price: {formatCurrency(item.basePrice)}
                       </p>
+                      {item.selectedColor && (
+                        <p className="text-gray-600 text-sm">
+                          Color: {item.selectedColor}
+                        </p>
+                      )}
                       {item.selectedDimension?.dimension && (
                         <p className="text-gray-600 text-sm">
                           Dimension: {item.selectedDimension.dimension}
