@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 import api from "../services/api";
 import { parseDbField } from "../services/parseDbFields";
+import { toast } from "react-hot-toast";
 type ProductSpec = string | { title: string; value: string };
 
 interface Condition {
@@ -582,7 +583,9 @@ const ProductForm = ({ product, onSubmit, onClose }: ProductFormProps) => {
       }
     } catch (error: any) {
       console.error("Error submitting product:", error);
-      alert(error.message);
+      toast.error(
+        error?.message || "An error occurred while submitting the product."
+      );
     } finally {
       setUploading(false);
     }

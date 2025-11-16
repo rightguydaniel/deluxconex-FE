@@ -18,10 +18,12 @@ import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CheckoutCancel from "./pages/CheckoutCancel";
 import WirePaymentPage from "./pages/WirePaymentPage";
 import AdminPaymentRequestsPage from "./pages/AdminPaymentRequestsPage";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" />
       <Routes>
         <Route path="/" index element={<HomepageWithVisit />} />
         <Route path="/auth" element={<Auth />} />

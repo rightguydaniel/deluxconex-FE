@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { toast } from "react-hot-toast";
 
 interface CartItem {
   productId: string;
@@ -113,7 +114,7 @@ const CartPage = () => {
       }
     } catch (err) {
       console.error("Error updating quantity:", err);
-      alert("Failed to update quantity. Please try again.");
+      toast.error("Failed to update quantity. Please try again.");
     }
   };
 
@@ -136,7 +137,7 @@ const CartPage = () => {
       setCart(response.data.data);
     } catch (err) {
       console.error("Error removing item:", err);
-      alert("Failed to remove item. Please try again.");
+      toast.error("Failed to remove item. Please try again.");
     }
   };
 
@@ -182,7 +183,7 @@ const CartPage = () => {
       }
     } catch (err) {
       console.error("Checkout error:", err);
-      alert("Failed to proceed to checkout. Please try again.");
+      toast.error("Failed to proceed to checkout. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -214,7 +215,7 @@ const CartPage = () => {
       }
 
       if (response.data.status === "success") {
-        alert(
+        toast.success(
           "Your wire transfer request has been received. A secure payment link will be sent to your email shortly."
         );
         navigate("/dashboard/orders");
@@ -225,7 +226,7 @@ const CartPage = () => {
       }
     } catch (err) {
       console.error("Wire checkout error:", err);
-      alert(
+      toast.error(
         "Failed to initiate wire transfer request. Please try again or contact support."
       );
     } finally {

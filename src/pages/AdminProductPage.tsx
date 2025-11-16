@@ -13,6 +13,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import ProductForm from "./ProductForm";
 import api from "../services/api";
+import { toast } from "react-hot-toast";
 
 interface Product {
   id: string;
@@ -109,7 +110,7 @@ const AdminProductsPage = () => {
       }
     } catch (error) {
       console.error("Error deleting product:", error);
-      alert("Failed to delete product");
+      toast.error("Failed to delete product");
     } finally {
       setDeleting(null);
     }

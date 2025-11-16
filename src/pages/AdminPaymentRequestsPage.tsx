@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import api from "../services/api";
 import { FiClock, FiCheckCircle, FiEdit2, FiEye } from "react-icons/fi";
+import { toast } from "react-hot-toast";
 
 interface PaymentRequest {
   id: string;
@@ -79,11 +80,11 @@ const AdminPaymentRequestsPage = () => {
         await fetchRequests();
         setSelected(null);
       } else {
-        alert(response.data.message || "Failed to issue wire details.");
+        toast.error(response.data.message || "Failed to issue wire details.");
       }
     } catch (err) {
       console.error("Issue wire details error:", err);
-      alert("Failed to issue wire details. Please try again.");
+      toast.error("Failed to issue wire details. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -427,18 +428,18 @@ const AdminPaymentRequestsPage = () => {
                         if (response.data.status === "success") {
                           await fetchRequests();
                           setViewing(null);
-                          alert(
+                          toast.success(
                             "Wire payment approved and order moved to processing."
                           );
                         } else {
-                          alert(
+                          toast.error(
                             response.data.message ||
                               "Failed to approve wire payment."
                           );
                         }
                       } catch (err) {
                         console.error("Approve wire payment error:", err);
-                        alert(
+                        toast.error(
                           "Failed to approve wire payment. Please try again."
                         );
                       }
