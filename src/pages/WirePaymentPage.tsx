@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../services/api";
+import { Header } from "../components/Header";
 
 interface WireInfo {
   accountName?: string;
@@ -23,6 +24,9 @@ const WirePaymentPage = () => {
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const searchParams = new URLSearchParams(location.search);
   const token = searchParams.get("token") ?? "";
@@ -83,6 +87,7 @@ const WirePaymentPage = () => {
         setSuccessMessage(
           "Thank you. Our payment team will verify your transfer within 1–3 business days and process your order."
         );
+        setSubmitted(true);
       } else {
         setError(response.data.message || "Failed to submit payment proof.");
       }
@@ -94,38 +99,103 @@ const WirePaymentPage = () => {
     }
   };
 
+  const handleFileSelect = (selected: File | null) => {
+    setFile(selected);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    const droppedFile = event.dataTransfer.files?.[0];
+    if (droppedFile) {
+      handleFileSelect(droppedFile);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="bg-white p-6 rounded shadow">Loading payment info…</div>
+      <div className="flex flex-col min-h-screen bg-gray-100">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-white p-6 rounded shadow">
+            Loading payment info…
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || !wireInfo) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="bg-white p-6 rounded shadow max-w-md text-center">
-          <h1 className="text-xl font-semibold mb-2">Payment link issue</h1>
-          <p className="text-gray-700 mb-4">{error}</p>
-          <p className="text-gray-600 text-sm">
-            If you believe this is a mistake, please contact{" "}
-            <a
-              href="mailto:admin@deluxconex.com"
-              className="text-blue-600 underline"
-            >
-              admin@deluxconex.com
-            </a>
-            .
-          </p>
+      <div className="flex flex-col min-h-screen bg-gray-100">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-white p-6 rounded shadow max-w-md text-center">
+            <h1 className="text-xl font-semibold mb-2">Payment link issue</h1>
+            <p className="text-gray-700 mb-4">{error}</p>
+            <p className="text-gray-600 text-sm">
+              If you believe this is a mistake, please contact{" "}
+              <a
+                href="mailto:admin@deluxconex.com"
+                className="text-blue-600 underline"
+              >
+                admin@deluxconex.com
+              </a>
+              .
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-100">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-white max-w-md w-full p-6 rounded-lg shadow text-center">
+            <h1 className="text-2xl font-bold mb-3 text-gray-800">
+              Payment proof submitted
+            </h1>
+            <p className="text-gray-700 mb-4">
+              Thank you. Our payment team will verify your transfer within{" "}
+              <strong>1–3 business days</strong> and process your order.
+            </p>
+            <p className="text-gray-600 text-sm mb-6">
+              If you need any assistance, please contact{" "}
+              <a
+                href="mailto:admin@deluxconex.com"
+                className="text-blue-600 underline"
+              >
+                admin@deluxconex.com
+              </a>
+              .
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="bg-white max-w-xl w-full p-6 rounded-lg shadow">
+    <div className="flex flex-col min-h-screen bg-gray-100">
+      <Header />
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="bg-white max-w-xl w-full p-6 rounded-lg shadow">
         <h1 className="text-2xl font-bold mb-4 text-gray-800">
           Wire Transfer Payment Instructions
         </h1>
@@ -199,17 +269,39 @@ const WirePaymentPage = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Upload proof of payment (optional)
             </label>
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`mt-1 flex flex-col items-center justify-center border-2 border-dashed rounded-md px-4 py-6 cursor-pointer text-center ${
+                isDragging
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+              }`}
+            >
+              <p className="text-sm text-gray-700 font-medium">
+                Click to upload or drag and drop
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Accepted formats: images (JPG, PNG, etc.) or PDF. Max 20 MB.
+              </p>
+              {file && (
+                <p className="text-xs text-gray-700 mt-2">
+                  Selected file: <span className="font-semibold">{file.name}</span>
+                </p>
+              )}
+            </div>
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*,application/pdf"
+              className="hidden"
               onChange={(e) => {
                 const selected = e.target.files?.[0] ?? null;
-                setFile(selected);
+                handleFileSelect(selected);
               }}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Accepted formats: images (JPG, PNG, etc.) or PDF. Max 20 MB.
-            </p>
           </div>
 
           <button
@@ -227,9 +319,9 @@ const WirePaymentPage = () => {
           <p className="mt-4 text-green-700 text-sm">{successMessage}</p>
         )}
       </div>
+      </div>
     </div>
   );
 };
 
 export default WirePaymentPage;
-
