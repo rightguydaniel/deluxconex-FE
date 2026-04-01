@@ -113,7 +113,7 @@ export const Footer = () => {
                     {platform}
                   </a>
                 </span>
-              )
+              ),
             )}
           </p>
         </div>
@@ -152,7 +152,9 @@ export const Footer = () => {
           <a href="#" className="hover:text-blue-500">
             Sitemap
           </a>
-          <span>© {new Date().getFullYear()} Deluxconex. All rights reserved.</span>
+          <span>
+            © {new Date().getFullYear()} Deluxconex. All rights reserved.
+          </span>
         </div>
       </div>
     </div>
