@@ -152,7 +152,7 @@ export const Footer = () => {
           <a href="#" className="hover:text-blue-500">
             Sitemap
           </a>
-          <span>© 2025 Deluxconex. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} Deluxconex. All rights reserved.</span>
         </div>
       </div>
     </div>
